@@ -151,6 +151,7 @@ local function round(num)
 end
 
 function show_flight_data()
+    draw_close_button()
     if showAircraft or showEngine then
         calc_fuel_data()
     end
@@ -210,6 +211,14 @@ function calc_weather_data()
         ckPressure = 1
     end
 end
+
+function draw_close_button()
+    graphics.set_color(.6, .6, .6, .5)
+    graphics.draw_rectangle(41, 264, 53, 252)
+    graphics.set_color(1, 0, 0, .5)
+    graphics.draw_rectangle(42, 263, 52, 253)
+    draw_string(44, 256, "x", 1, 1, 0)
+ end
 
 function draw_location()
     local function double_box(y, height)
@@ -716,10 +725,17 @@ function draw_simulator()
 
     graphics.set_color(.6, .6, .6, .5)
     graphics.draw_rectangle(110, 19, 139, 33)
-    graphics.set_color(0, 0, 0, .425)
+    if fps <= 18 then
+        graphics.set_color(1, 0, 0, .5)
+    else
+        graphics.set_color(0, 0, 0, .425)
+    end
     graphics.draw_rectangle(111, 20, 138, 32)
-
-    draw_string(114, 23, string.format('%03.0f', fps), 0, 1, 0, .8)
+    if fps <= 18 then
+        draw_string(114, 23, string.format('%03.0f', fps), 1, 1, 0)
+    else
+        draw_string(114, 23, string.format('%03.0f', fps), 0, 1, 0)--, .8)
+    end
 
     draw_string(158, 23, "GPU", .9, .9, .9)
 
@@ -889,15 +905,15 @@ function draw_radio()
                 draw_string(507, 142, xpdr, .1, 1, .1)
             end
             draw_string(557, 142, xpMode, .1, 7, .1)
-            if crossTie == 1 then
-                --display data only if the cross tie to bus 2 is on
-                draw_string(507, 206, string.format('%.2f', com2), .1, 1, .1)
-                draw_string(557, 206, string.format('%.2f', com2S), 0, .7, 0)
-                draw_string(507, 176, string.format('%.2f', nav2), .1, 1, .1)
-                draw_string(557, 176, string.format('%.2f', nav2S), 0, .7, 0)
-                draw_string(507, 160, adf1, .1, 1, .1)
-                draw_string(557, 160, adf1S, 0, .7, 0)
-            end
+            --if crossTie == 1 then
+            --display data only if the cross tie to bus 2 is on
+            draw_string(507, 206, string.format('%.2f', com2), .1, 1, .1)
+            draw_string(557, 206, string.format('%.2f', com2S), 0, .7, 0)
+            draw_string(507, 176, string.format('%.2f', nav2), .1, 1, .1)
+            draw_string(557, 176, string.format('%.2f', nav2S), 0, .7, 0)
+            draw_string(507, 160, adf1, .1, 1, .1)
+            draw_string(557, 160, adf1S, 0, .7, 0)
+            -- end
         end
     end
 
@@ -1105,7 +1121,7 @@ function pause_warn_box()
 end
 
 function mainProg()
-    if isActive then
+    if XFDVisActive then
         batteryOn = mainBatteryOn ~= 0
 
         if batteryOn and reloadParams then
@@ -1124,11 +1140,22 @@ function mainProg()
     end
 end
 
+function mouse_click()
+    -- close button clicked
+    xClick = MOUSE_X
+    yClick = MOUSE_Y
+    if (xClick >= 41 and xClick <= 53) and (yClick >= 252 and yClick <= 265) then
+        XFDVisActive = false
+    end
+end
+
+XFDVisActive = true
 reloadParams = false
 
 --Main Program
 load_params()
 getDataRefs()
 do_every_draw("mainProg()")
+do_on_mouse_click("mouse_click()")
 
-add_macro("Show Flight Data Window", "isActive = true", "isActive = false", "activate")
+add_macro("Show Flight Data Window", "XFDVisActive = true")
