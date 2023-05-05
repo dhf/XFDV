@@ -43,18 +43,6 @@ function XFDV_setParamsDefault()
     jjjLib1.setParamsDefault(pluginId)
 end
 
---local liquidUnit = XFDV_param("liquidUnit")
---local weightUnit = XFDV_param("weightUnit")
---local tempUnit = XFDV_param("tempUnit")
----- control visibility of informations
---local showAircraft = XFDV_param("showAircraft")
---local showWeather = XFDV_param("showWeather")
---local showSimulator = XFDV_param("showSimulator")
---local showLocation = XFDV_param("showLocation")
---local showEngine = XFDV_param("showEngine")
---local showRadio = XFDV_param("showRadio")
---local showAutopilot = XFDV_param("showAutopilot")
-
 -- XFDV_saveParams()
 
 function load_params()
@@ -78,7 +66,7 @@ end
 function getDataRefs()
 
     --**GetDatarefValues**
-
+    dataref("paused", "sim/time/paused")
     --Cockpit
     dataref("mainBatteryOn", "sim/cockpit/electrical/battery_on")
     dataref("taxiLight", "sim/cockpit/electrical/taxi_light_on")
@@ -1089,19 +1077,31 @@ function draw_data_box()
 
 end
 
+local function draw_warn_box(top, left, bottom, right)
+    graphics.set_color(.2, .2, .2, .6)
+    graphics.draw_rectangle(left, bottom, right, top)
+    graphics.set_color(.8, .8, .2, .6)
+    graphics.draw_rectangle(left + 3, bottom + 3, right - 3, top - 3)
+end
+
 function power_warn_box()
     local left = leftMargin + ((outerWidth - leftMargin) / 2) - 100
     local right = leftMargin + ((outerWidth - leftMargin) / 2) + 100
     local bottom = 100
     local top = 175
-    --optional function to let the pilot know the battery is not on
-    graphics.set_color(.2, .2, .2, .6)
-    graphics.draw_rectangle(left, bottom, right, top)
-    graphics.set_color(.8, .8, .2, .6)
-    graphics.draw_rectangle(left + 3, bottom + 3, right - 3, top - 3)
+    draw_warn_box(top, left, bottom, right)
     draw_string(left + 38, top - 20, "-= Flight Data Viewer =-", 1, 0, 0)
     draw_string(left + 70, top - 45, "NO POWER!", 1, 0, 0)
     draw_string(left + 59, top - 59, "Turn Battery On", 1, 0, 0)
+end
+
+function pause_warn_box()
+    local left = leftMargin + ((outerWidth - leftMargin) / 2) - 100
+    local right = leftMargin + ((outerWidth - leftMargin) / 2) + 100
+    local bottom = 100
+    local top = 175
+    draw_warn_box(top, left, bottom, right)
+    draw_string(left + 35, top - 40, "** SIMULATOR PAUSED **", 1, 0, 0)
 end
 
 function mainProg()
@@ -1115,7 +1115,9 @@ function mainProg()
         draw_data_box()
         show_flight_data()
 
-        if not batteryOn then
+        if paused ~= 0 then
+            pause_warn_box()
+        elseif (not batteryOn) then
             power_warn_box()
             reloadParams = true
         end
