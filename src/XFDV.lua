@@ -1104,20 +1104,18 @@ function power_warn_box()
     local left = leftMargin
     local right = leftMargin + 200
     local bottom = 265
-    local top = 335
+    local top = 300
     draw_warn_box(top, left, bottom, right)
-    draw_string(left + 38, top - 20, "-= Flight Data Viewer =-", 1, 0, 0)
-    draw_string(left + 70, top - 45, "NO POWER!", 1, 0, 0)
-    draw_string(left + 59, top - 59, "Turn Battery On", 1, 0, 0)
+    draw_string(left + 26, top - 20, "NO POWER! - Turn Battery On", 1, 0, 0)
 end
 
 function pause_warn_box()
     local left = leftMargin
     local right = leftMargin + 200
     local bottom = 265
-    local top = 335
+    local top = 300
     draw_warn_box(top, left, bottom, right)
-    draw_string(left + 35, top - 40, "** SIMULATOR PAUSED **", 1, 0, 0)
+    draw_string(left + 35, top - 20, "** SIMULATOR PAUSED **", 1, 0, 0)
 end
 
 function mainProg()
