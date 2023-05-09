@@ -118,8 +118,12 @@ function getDataRefs()
     dataref("ambiTemp", "sim/weather/aircraft/temperature_ambient_deg_c")
     dataref("precip", "sim/weather/region/rain_percent")
 
-    cloudTypes = dataref_table("sim/weather/aircraft/cloud_type")
-    cloudAlts = dataref_table("sim/weather/aircraft/cloud_base_msl_m")
+    dataref("cloudType0", "sim/weather/aircraft/cloud_type", "readonly", 0)
+    dataref("cloudType1", "sim/weather/aircraft/cloud_type", "readonly", 1)
+    dataref("cloudType2", "sim/weather/aircraft/cloud_type", "readonly", 2)
+    dataref("cloudAlt0", "sim/weather/aircraft/cloud_base_msl_m", "readonly", 0)
+    dataref("cloudAlt1", "sim/weather/aircraft/cloud_base_msl_m", "readonly", 1)
+    dataref("cloudAlt2", "sim/weather/aircraft/cloud_base_msl_m", "readonly", 2)
     dataref("turbulence", "sim/weather/region/turbulence", "readonly", 0)
     --***comment out next three lines to allow real time weather to control turbulence level
     if turbulence >= 0.25 then
@@ -150,6 +154,25 @@ local function round(num)
     return num + (2 ^ 52 + 2 ^ 51) - (2 ^ 52 + 2 ^ 51)
 end
 
+local function draw_switch(isOn, label, x, y)
+    graphics.set_color(.6, .6, .6, .5)
+    graphics.draw_circle(x + 3, y + 3, 4)
+    if isOn then
+        graphics.set_color(0, 1, 0, .5)
+    else
+        graphics.set_color(0, 0, 0, .425)
+    end
+    graphics.draw_filled_circle(x + 3, y + 3, 3)
+    draw_string(x + 9, y, label, 1, 1, 1)
+end
+
+local function draw_fill_rect(left, top, length, height, rBorder, gBorder, bBorder, alphaBorder, lineWidth, rFill, gFill, bFill, alphaFill)
+    graphics.set_color(rBorder, gBorder, bBorder, alphaBorder)
+    graphics.draw_rectangle(left, top, left + length, top - height)
+    graphics.set_color(rFill, gFill, bFill, alphaFill)
+    graphics.draw_rectangle(left + lineWidth, top - lineWidth, left + length - lineWidth, top - height + lineWidth)
+end
+
 function show_flight_data()
     draw_close_button()
     if showAircraft or showEngine then
@@ -159,7 +182,7 @@ function show_flight_data()
         calc_weather_data()
     end
     if showAircraft then
-        draw_aircraft()
+        draw_aircraft(53, 257)
     end
     if showWeather then
         draw_weather()
@@ -218,7 +241,7 @@ function draw_close_button()
     graphics.set_color(1, 0, 0, .5)
     graphics.draw_rectangle(42, 263, 52, 253)
     draw_string(44, 256, "x", 1, 1, 0)
- end
+end
 
 function draw_location()
     local function double_box(y, height)
@@ -420,125 +443,24 @@ function draw_location()
     end
 end
 
-function draw_aircraft()
+function draw_aircraft(left, top)
     --Aircraft information
-    draw_string(53, 247, "AIRCRAFT", .9, .9, .2)
-
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(112, 243, 228, 257)
-    graphics.set_color(0, 0, 0, .425)
-    graphics.draw_rectangle(113, 244, 166, 256)
-    graphics.draw_rectangle(167, 244, 227, 256)
-
+    draw_string(left, top - 10, "AIRCRAFT", .9, .9, .2)
+    draw_fill_rect(left + 59, top, 58, 14, .6, .6, .6, .5, 1, 0, 0, 0, .425)
+    draw_fill_rect(left + 59 + 57, top, 58, 14, .6, .6, .6, .5, 1, 0, 0, 0, .425)
     draw_string(115, 247, acftName, 1, 1, 0, .8)
-    draw_string(169, 247, tailNum, 1, 1, 0, .8)
+    draw_string(172, 247, tailNum, 1, 1, 0, .8)
 
-    --Annunciators
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(52, 200, 228, 242)
-    graphics.set_color(0, 0, 0, .425)
-
-    --row 1
-    graphics.draw_rectangle(53, 229, 112, 241)
-
-    if batteryOn then
-        --display data only if the battery is on
-        if ckPressure == 0 then
-            draw_string(57, 232, "CK BARO", .3, .3, .3)
-        else
-            draw_string(57, 232, "CK BARO", .8, .8, .2)
-        end
-    end
-
-    graphics.draw_rectangle(113, 229, 166, 241)
-
-    if batteryOn then
-        --display data only if the battery is on
-        if fuelRemain <= 1.0 then
-            draw_string(117, 232, "CK FUEL", .8, .8, .2)
-        else
-            draw_string(117, 232, "CK FUEL", .3, .3, .3)
-        end
-    end
-
-    graphics.draw_rectangle(167, 229, 227, 241)
-
-    if batteryOn then
-        --display data only if the battery is on
-        if fuelPump == 0 then
-            draw_string(172, 232, "Fuel Pmp", .3, .3, .3)
-        else
-            draw_string(172, 232, "Fuel Pmp", .2, .8, .2)
-        end
-    end
-
-    --row 2
-    graphics.draw_rectangle(53, 215, 112, 228)
-
-    if batteryOn then
-        --display data only if the battery is on
-        if landingLight == 0 then
-            draw_string(61, 218, "Land LT", .3, .3, .3)
-        else
-            draw_string(61, 218, "Land Lt", .2, .8, .2)
-        end
-    end
-
-    graphics.draw_rectangle(113, 215, 166, 228)
-
-    if batteryOn then
-        --display data only if the battery is on
-        if taxiLight == 0 then
-            draw_string(120, 218, "Taxi LT", .3, .3, .3)
-        else
-            draw_string(120, 218, "Taxi Lt", .2, .8, .2)
-        end
-    end
-
-    graphics.draw_rectangle(167, 215, 227, 228)
-
-    if batteryOn then
-        --display data only if the battery is on
-        if pitoHeat == 0 then
-            draw_string(175, 218, "PITO Ht", .3, .3, .3)
-        else
-            draw_string(175, 218, "PITO Ht", .2, .8, .2)
-        end
-    end
-
-    --row 3
-    graphics.draw_rectangle(53, 201, 112, 214)
-
-    if batteryOn then
-        --display data only if the battery is on
-        if beaconLight == 0 then
-            draw_string(61, 204, "Beacon", .3, .3, .3)
-        else
-            draw_string(61, 204, "Beacon", .2, .8, .2)
-        end
-    end
-
-    graphics.draw_rectangle(113, 201, 166, 214)
-
-    if batteryOn then
-        --display data only if the battery is on
-        if strobeLight == 0 then
-            draw_string(121, 204, "Strobe", .3, .3, .3)
-        else
-            draw_string(121, 204, "Strobe", .2, .8, .2)
-        end
-    end
-
-    graphics.draw_rectangle(167, 201, 227, 214)
-
-    if batteryOn then
-        --display data only if the battery is on
-        if navLight == 0 then
-            draw_string(185, 204, "Nav", .3, .3, .3)
-        else
-            draw_string(185, 204, "Nav", .2, .8, .2)
-        end
-    end
+    ----Switches
+    draw_fill_rect(left, top - 16, 174, 43, .6, .6, .6, .5, 1, 0, 0, 0, .425)
+    draw_switch(batteryOn and taxiLight ~= 0, "Taxi LT", left + 3, top - 26)
+    draw_switch(batteryOn and landingLight ~= 0, "Land LT", left + 63, top - 26)
+    draw_switch(batteryOn and beaconLight ~= 0, "Beacon", left + 119, top - 26)
+    draw_switch(batteryOn and strobeLight ~= 0, "Strobe", left + 3, top - 40)
+    draw_switch(batteryOn and navLight ~= 0, "Nav LT", left + 63, top - 40)
+    draw_switch(batteryOn and landingLight ~= 0, "Land LT", left + 119, top - 40)
+    draw_switch(batteryOn and fuelPump ~= 0, "Fuel P.", left + 3, top - 54)
+    draw_switch(batteryOn and pitoHeat ~= 0, "Pitot Ht", left + 63, top - 54)
 
     --Display electrical info
     draw_string(64, 187, "Main Battery", .9, .9, .9)
@@ -605,9 +527,9 @@ function draw_weather()
         [4] = "Overcast",
         [5] = "Stratus",
     }
-    local clType0 = cloudType_tbl[round(cloudTypes[0])]
-    local clType1 = cloudType_tbl[round(cloudTypes[1])]
-    local clType2 = cloudType_tbl[round(cloudTypes[2])]
+    local clType0 = cloudType_tbl[round(cloudType0)]
+    local clType1 = cloudType_tbl[round(cloudType1)]
+    local clType2 = cloudType_tbl[round(cloudType2)]
 
     --Miscellaneous Calculations
     --weather
@@ -706,13 +628,13 @@ function draw_weather()
 
     if batteryOn then
         --display data only if the battery is on
-        draw_string(78, 80, string.format('%05.0f', cloudAlts[2] * 3.28), .9, .9, .9)
+        draw_string(78, 80, string.format('%05.0f', cloudAlt2 * 3.28), .9, .9, .9)
         draw_string(143, 80, clType2, 0, 1, 0, .8)
 
-        draw_string(78, 68, string.format('%05.0f', cloudAlts[1] * 3.28), .9, .9, .9)
+        draw_string(78, 68, string.format('%05.0f', cloudAlt1 * 3.28), .9, .9, .9)
         draw_string(143, 68, clType1, 0, 1, 0, .8)
 
-        draw_string(78, 56, string.format('%05.0f', cloudAlts[0] * 3.28), .9, .9, .9)
+        draw_string(78, 56, string.format('%05.0f', cloudAlt0 * 3.28), .9, .9, .9)
         draw_string(143, 56, clType0, 0, 1, 0, .9)
     end
 end
