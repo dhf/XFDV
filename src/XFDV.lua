@@ -454,7 +454,7 @@ function draw_aircraft()
 
     if batteryOn then
         --display data only if the battery is on
-        if fuelRemain <= 2.5 then
+        if fuelRemain <= 1.0 then
             draw_string(117, 232, "CK FUEL", .8, .8, .2)
         else
             draw_string(117, 232, "CK FUEL", .3, .3, .3)
@@ -785,11 +785,11 @@ function draw_engine()
 
     if batteryOn then
         --display data only if the battery is on
-        if fuelRemain <= 3.0 then
+        if fuelRemain <= 1.0 then
             graphics.set_color(1, 1, 0, .6)
             graphics.draw_rectangle(338, 65, 441, 78)
             draw_string(355, 68, "CHECK FUEL", 0, 0, 0, 1)
-        elseif fuelRemain <= 2.5 then
+        elseif fuelRemain <= 0.5 then
             graphics.set_color(1, 0, 0, .6)
             graphics.draw_rectangle(338, 65, 441, 78)
             draw_string(365, 68, "FUEL!!", 1, 1, 0, 1)
