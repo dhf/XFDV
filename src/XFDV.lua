@@ -173,7 +173,38 @@ local function draw_fill_rect(left, top, length, height, rBorder, gBorder, bBord
     graphics.draw_rectangle(left + lineWidth, top - lineWidth, left + length - lineWidth, top - height + lineWidth)
 end
 
+local function draw_fill_rect_text_center(left, top, length, height, rBorder, gBorder, bBorder, alphaBorder,
+                                          lineWidth, rFill, gFill, bFill, alphaFill,
+                                          text, rText, gText, bText)
+    draw_fill_rect(left, top, length, height, rBorder, gBorder, bBorder, alphaBorder, lineWidth, rFill, gFill, bFill, alphaFill)
+    strLen = measure_string(text)
+    draw_string(left + ((length - strLen) / 2), top - (height / 2 + 3), text, rText, gText, bText)
+
+end
+
+local function draw_fill_rect_text_left(left, top, length, height, rBorder, gBorder, bBorder, alphaBorder,
+                                          lineWidth, rFill, gFill, bFill, alphaFill,
+                                          text, rText, gText, bText)
+    draw_fill_rect(left, top, length, height, rBorder, gBorder, bBorder, alphaBorder, lineWidth, rFill, gFill, bFill, alphaFill)
+    strLen = measure_string(text)
+    draw_string(left + 4, top - 10, text, rText, gText, bText)
+
+end
+
+local function draw_fill_rect_text_right(left, top, length, height, rBorder, gBorder, bBorder, alphaBorder,
+                                        lineWidth, rFill, gFill, bFill, alphaFill,
+                                        text, rText, gText, bText)
+    draw_fill_rect(left, top, length, height, rBorder, gBorder, bBorder, alphaBorder, lineWidth, rFill, gFill, bFill, alphaFill)
+    strLen = measure_string(text)
+    draw_string(left + (length - strLen - 4), top - 10, text, rText, gText, bText)
+
+end
+
+
+
 function show_flight_data()
+    local left = 53
+    local bottom = 0
     draw_close_button()
     if showAircraft or showEngine then
         calc_fuel_data()
@@ -182,10 +213,10 @@ function show_flight_data()
         calc_weather_data()
     end
     if showAircraft then
-        draw_aircraft(53, 257)
+        draw_aircraft(left, bottom + 257)
     end
     if showWeather then
-        draw_weather()
+        draw_weather(left, bottom + 147)
     end
     if showSimulator then
         draw_simulator()
@@ -446,77 +477,50 @@ end
 function draw_aircraft(left, top)
     --Aircraft information
     draw_string(left, top - 10, "AIRCRAFT", .9, .9, .2)
-    draw_fill_rect(left + 59, top, 58, 14, .6, .6, .6, .5, 1, 0, 0, 0, .425)
-    draw_fill_rect(left + 59 + 57, top, 58, 14, .6, .6, .6, .5, 1, 0, 0, 0, .425)
-    draw_string(115, 247, acftName, 1, 1, 0, .8)
-    draw_string(172, 247, tailNum, 1, 1, 0, .8)
+    draw_fill_rect_text_center(left + 59, top, 58, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            acftName, 1, 1, 0)
+    draw_fill_rect_text_center(left + 59 + 57, top, 58, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            tailNum, 1, 1, 0)
 
     ----Switches
     draw_fill_rect(left, top - 16, 174, 43, .6, .6, .6, .5, 1, 0, 0, 0, .425)
     draw_switch(batteryOn and taxiLight ~= 0, "Taxi LT", left + 3, top - 26)
     draw_switch(batteryOn and landingLight ~= 0, "Land LT", left + 63, top - 26)
-    draw_switch(batteryOn and beaconLight ~= 0, "Beacon", left + 119, top - 26)
+    draw_switch(batteryOn and navLight ~= 0, "Nav LT", left + 119, top - 26)
     draw_switch(batteryOn and strobeLight ~= 0, "Strobe", left + 3, top - 40)
-    draw_switch(batteryOn and navLight ~= 0, "Nav LT", left + 63, top - 40)
-    draw_switch(batteryOn and landingLight ~= 0, "Land LT", left + 119, top - 40)
+    draw_switch(batteryOn and beaconLight ~= 0, "Beacon", left + 63, top - 40)
     draw_switch(batteryOn and fuelPump ~= 0, "Fuel P.", left + 3, top - 54)
     draw_switch(batteryOn and pitoHeat ~= 0, "Pitot Ht", left + 63, top - 54)
 
-    --Display electrical info
-    draw_string(64, 187, "Main Battery", .9, .9, .9)
-
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(139, 182, 228, 196)
-    graphics.set_color(0, 0, 0, .425)
-    graphics.draw_rectangle(140, 183, 185, 195)
-
+    --Display electrical and engine info
+    draw_string(left, top - 70, "Main Battery", .9, .9, .9)
+    draw_string(left, top - 87, "Oil Pressure", .9, .9, .9)
+    draw_string(left, top - 103, "Vacuum Press", .9, .9, .9)
     if batteryOn then
-        --display data only if the battery is on
         if batteryAmps <= -0.0 then
-            graphics.set_color(1, 0, 0, .5)
-            graphics.draw_rectangle(140, 183, 185, 195)
-            draw_string(144, 186, string.format('%.1fA', batteryAmps), 1, 1, 0)
+            draw_fill_rect_text_center(left + 81, top - 61, 47, 14, .6, .6, .6, .5,
+                    1, 1, 0, 0, .8,
+                    string.format('%.1fA', batteryAmps), 1, 1, 0)
         else
-            draw_string(143, 186, string.format('%.1fA', batteryAmps), 0, 1, 0)
+            draw_fill_rect_text_center(left + 81, top - 61, 47, 14, .6, .6, .6, .5,
+                    1, 0, 0, 0, .425,
+                    string.format('%.1fA', batteryAmps), 0, 1, 0)
         end
-    end
-
-    graphics.set_color(0, 0, 0, .425)
-    graphics.draw_rectangle(186, 183, 227, 195)
-
-    if batteryOn then
-        --display data only if the battery is on
-        draw_string(190, 186, string.format('%.1fV', batteryVolts), 0, 1, 0)
-    end
-
-    --Oil pressure
-    draw_string(67, 170, "Oil Pressure", .9, .9, .9)
-
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(139, 166, 185, 180)
-    graphics.set_color(.0, .0, .0, .425)
-    graphics.draw_rectangle(140, 167, 184, 179)
-
-    if batteryOn then
-        --display data only if the battery is on
-        draw_string(144, 170, string.format('%.2f', oilPressure), 0, 1, 0)
-    end
-
-    --Vacuum pressure
-    draw_string(55, 154, "Vacuum Press", .9, .9, .9)
-
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(139, 150, 185, 164)
-    graphics.set_color(.0, .0, .0, .425)
-    graphics.draw_rectangle(140, 151, 184, 163)
-
-    if batteryOn then
-        --display data only if the battery is on
-        draw_string(144, 154, string.format('%02.2f', vacuumRatio), 0, 1, 0)
+        draw_fill_rect_text_center(left + 127, top - 61, 47, 14, .6, .6, .6, .5,
+                1, 0, 0, 0, .425,
+                string.format('%.1fV', batteryVolts), 0, 1, 0)
+        draw_fill_rect_text_center(left + 81, top - 77, 47, 14, .6, .6, .6, .5,
+                1, 0, 0, 0, .425,
+                string.format('%.2f', oilPressure), 0, 1, 0)
+        draw_fill_rect_text_center(left + 81, top - 93, 47, 14, .6, .6, .6, .5,
+                1, 0, 0, 0, .425,
+                string.format('%02.2f', vacuumRatio), 0, 1, 0)
     end
 end
 
-function draw_weather()
+function draw_weather(left, top)
     --Set cloud types for display
     --Cloud Types: Clear = 0, High Cirrus = 1, Scattered = 2, Broken = 3, Overcast = 4, Stratus = 5
     local cloudType_tbl = {
@@ -538,7 +542,7 @@ function draw_weather()
     visMiles = visibility * 0.000621371
 
     --Display weather data
-    draw_string(52, 137, "Weather Data", .9, .9, .2)
+    draw_string(left, top - 10, "Weather Data", .9, .9, .2)
 
     --wind dir box
     draw_string(55, 124, "Wind", .9, .9, .9)
@@ -968,11 +972,14 @@ function draw_autopilot()
     end
 end
 
+local leftMargin = 40
+local globalTop = 265
+
 function draw_data_box()
-    leftMargin = 40
-    local col1 = 198
-    local col2 = 213
-    local col3 = 157
+    bottomMargin = 11
+    local col1Width = 198
+    local col2Width = 213
+    local col3Width = 157
     border = 1
 
     local showCol1 = showAircraft or showWeather or showSimulator
@@ -981,63 +988,46 @@ function draw_data_box()
 
     outerWidth = leftMargin
     if showCol1 then
-        outerWidth = outerWidth + col1 + border
+        outerWidth = outerWidth + col1Width + border
     end
     if showCol2 then
-        outerWidth = outerWidth + col2 + border
+        outerWidth = outerWidth + col2Width + border
     end
     if showCol3 then
-        outerWidth = outerWidth + col3 + border
+        outerWidth = outerWidth + col3Width + border
     end
 
-    --Draw outer box
-    if outerWidth > leftMargin then
-        graphics.set_color(.9, .9, .9, .325)
-        graphics.draw_rectangle(leftMargin, 11, outerWidth + border, 265)
-    end
-
-    --Backgrounds
-    graphics.set_color(.1, .1, .1, .425)
-    colBegin = leftMargin + border
+    ----Backgrounds
+    colBegin = leftMargin
     if showCol1 then
-        graphics.draw_rectangle(colBegin, 12, colBegin + col1, 264)
-        colBegin = colBegin + col1 + border
+        draw_fill_rect(colBegin, globalTop, col1Width + border + border, globalTop - 11, .9, .9, .9, .325,
+                1, .1, .1, .1, .425)
+        colBegin = colBegin + col1Width + border
     end
     if showCol2 then
-        graphics.draw_rectangle(colBegin, 12, colBegin + col2, 264)
+        draw_fill_rect(colBegin, globalTop, col2Width + border + border, globalTop - 11, .9, .9, .9, .325,
+                1, .1, .1, .1, .425)
         col2Start = colBegin
-        colBegin = colBegin + col2 + border
+        colBegin = colBegin + col2Width + border
     end
     if showCol3 then
-        graphics.draw_rectangle(colBegin, 12, colBegin + col3, 264)
+        draw_fill_rect(colBegin, globalTop, col3Width + border + border, globalTop - 11, .9, .9, .9, .325,
+                1, .1, .1, .1, .425)
         col3Start = colBegin
     end
 
 end
 
-local function draw_warn_box(top, left, bottom, right)
-    graphics.set_color(.2, .2, .2, .6)
-    graphics.draw_rectangle(left, bottom, right, top)
-    graphics.set_color(.8, .8, .2, .6)
-    graphics.draw_rectangle(left + 3, bottom + 3, right - 3, top - 3)
+local function power_warn_box(left, top)
+    draw_fill_rect_text_center(left, top, 200, 35, .6, .6, .6, .5,
+            1, .8, .8, .2, .6,
+            "NO POWER! - Turn Battery On", 1, 0, 0)
 end
 
-function power_warn_box()
-    local left = leftMargin
-    local right = leftMargin + 200
-    local bottom = 265
-    local top = 300
-    draw_warn_box(top, left, bottom, right)
-    draw_string(left + 26, top - 20, "NO POWER! - Turn Battery On", 1, 0, 0)
-end
-
-function pause_warn_box()
-    local left = leftMargin
-    local right = leftMargin + 200
-    local bottom = 265
-    local top = 300
-    draw_warn_box(top, left, bottom, right)
-    draw_string(left + 35, top - 20, "** SIMULATOR PAUSED **", 1, 0, 0)
+local function pause_warn_box(left, top)
+    draw_fill_rect_text_center(left, top, 200, 35, .6, .6, .6, .5,
+            1, .8, .8, .2, .6,
+            "** SIMULATOR PAUSED **", 1, 0, 0)
 end
 
 function mainProg()
@@ -1052,9 +1042,9 @@ function mainProg()
         show_flight_data()
 
         if paused ~= 0 then
-            pause_warn_box()
+            pause_warn_box(leftMargin, 300)
         elseif (not batteryOn) then
-            power_warn_box()
+            power_warn_box(leftMargin, 300)
             reloadParams = true
         end
     end
