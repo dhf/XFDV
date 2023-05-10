@@ -177,30 +177,27 @@ local function draw_fill_rect_text_center(left, top, length, height, rBorder, gB
                                           lineWidth, rFill, gFill, bFill, alphaFill,
                                           text, rText, gText, bText)
     draw_fill_rect(left, top, length, height, rBorder, gBorder, bBorder, alphaBorder, lineWidth, rFill, gFill, bFill, alphaFill)
-    strLen = measure_string(text)
+    local strLen = measure_string(text)
     draw_string(left + ((length - strLen) / 2), top - (height / 2 + 3), text, rText, gText, bText)
 
 end
 
 local function draw_fill_rect_text_left(left, top, length, height, rBorder, gBorder, bBorder, alphaBorder,
-                                          lineWidth, rFill, gFill, bFill, alphaFill,
-                                          text, rText, gText, bText)
+                                        lineWidth, rFill, gFill, bFill, alphaFill,
+                                        text, rText, gText, bText)
     draw_fill_rect(left, top, length, height, rBorder, gBorder, bBorder, alphaBorder, lineWidth, rFill, gFill, bFill, alphaFill)
-    strLen = measure_string(text)
     draw_string(left + 4, top - 10, text, rText, gText, bText)
 
 end
 
 local function draw_fill_rect_text_right(left, top, length, height, rBorder, gBorder, bBorder, alphaBorder,
-                                        lineWidth, rFill, gFill, bFill, alphaFill,
-                                        text, rText, gText, bText)
+                                         lineWidth, rFill, gFill, bFill, alphaFill,
+                                         text, rText, gText, bText)
     draw_fill_rect(left, top, length, height, rBorder, gBorder, bBorder, alphaBorder, lineWidth, rFill, gFill, bFill, alphaFill)
-    strLen = measure_string(text)
+    local strLen = measure_string(text)
     draw_string(left + (length - strLen - 4), top - 10, text, rText, gText, bText)
 
 end
-
-
 
 function show_flight_data()
     local left = 53
@@ -219,7 +216,7 @@ function show_flight_data()
         draw_weather(left, bottom + 147)
     end
     if showSimulator then
-        draw_simulator()
+        draw_simulator(left, bottom + 46)
     end
     if showLocation then
         draw_location()
@@ -545,132 +542,79 @@ function draw_weather(left, top)
     draw_string(left, top - 10, "Weather Data", .9, .9, .2)
 
     --wind dir box
-    draw_string(55, 124, "Wind", .9, .9, .9)
-
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(85, 120, 116, 134)
-    graphics.set_color(0, 0, 0, .425)
-    graphics.draw_rectangle(86, 133, 115, 121)
-
+    draw_string(left, top - 23, "Wind", .9, .9, .9)
+    draw_string(left + 69, top - 23, "at", .9, .9, .9)
     if batteryOn then
-        draw_string(89, 124, string.format('%03.0f', math.ceil(windDIR)), 0, 1, 0)
-    end
-
-    draw_string(121, 124, "at", .9, .9, .9)
-
-    --wind speed box
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(138, 134, 228, 120)
-    graphics.set_color(0, 0, 0, .425)
-    graphics.draw_rectangle(139, 133, 181, 121)
-    graphics.draw_rectangle(182, 133, 227, 121)
-
-    if batteryOn then
-        --display data only if the battery is on
-        draw_string(143, 124, string.format('%02.0f', math.ceil(windSP)) .. " Kts", 0, 1, 0)
-        draw_string(184, 124, string.format('%02.0f', math.ceil(windMPH)) .. " Mph", 0, 1, 0)
+        draw_fill_rect_text_center(left + 32, top - 13, 31, 14, .6, .6, .6, .5,
+                1, 0, 0, 0, .425,
+                string.format('%03.0f', math.ceil(windDIR)), 0, 1, 0)
+        draw_fill_rect_text_center(left + 83, top - 13, 46, 14, .6, .6, .6, .5,
+                1, 0, 0, 0, .425,
+                string.format('%02.0f', math.ceil(windSP)) .. " Kts", 0, 1, 0)
+        draw_fill_rect_text_center(left + 128, top - 13, 46, 14, .6, .6, .6, .5,
+                1, 0, 0, 0, .425,
+                string.format('%02.0f', math.ceil(windMPH)) .. " Mph", 0, 1, 0)
     end
 
     --Turbulence/Precip/Visibility
-    draw_string(54, 108, "Turb.", .9, .9, .9)
-
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(85, 104, 110, 118)
-    graphics.set_color(0, 0, 0, .425)
-    graphics.draw_rectangle(86, 105, 109, 117)
+    draw_string(left, top - 39, "Turb.", .9, .9, .9)
+    draw_string(left + 63, top - 39, "Precip.", .9, .9, .9)
+    draw_string(left + 124, top - 39, "Vis.", .9, .9, .9)
 
     if batteryOn then
-        --display data only if the battery is on
-        draw_string(88, 108, string.format('%.1f', turbulence), 0, 1, 0, .8)
+        draw_fill_rect_text_center(left + 32, top - 29, 25, 14, .6, .6, .6, .5,
+                1, 0, 0, 0, .425,
+                string.format('%.1f', turbulence), 0, 1, 0)
+        draw_fill_rect_text_center(left + 101, top - 29, 17, 14, .6, .6, .6, .5,
+                1, 0, 0, 0, .425,
+                string.format('%.0f', precip), 0, 1, 0)
+        draw_fill_rect_text_center(left + 145, top - 29, 29, 14, .6, .6, .6, .5,
+                1, 0, 0, 0, .425,
+                string.format('%.0f', visMiles), 0, 1, 0)
     end
 
-    draw_string(115, 108, "Precip.", .9, .9, .9)
-
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(156, 104, 172, 118)
-    graphics.set_color(0, 0, 0, .425)
-    graphics.draw_rectangle(157, 105, 171, 117)
-
+    draw_string(left, top - 53, "Clouds at Alt.", .9, .9, .9)
+    draw_string(left + 90, top - 53, "Type", .9, .9, .9)
     if batteryOn then
-        --display data only if the battery is on
-        draw_string(160, 108, string.format('%.0f', precip), 0, 1, 0, .8)
-    end
-
-    draw_string(176, 108, "Vis.", .9, .9, .9)
-
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(198, 104, 228, 118)
-    graphics.set_color(0, 0, 0, .425)
-    graphics.draw_rectangle(199, 105, 227, 117)
-
-    if batteryOn then
-        --display data only if the battery is on
-        draw_string(206, 108, string.format('%.0f', visMiles), 0, 1, 0, .8)
-    end
-
-    draw_string(57, 94, "Clouds at Alt.", .9, .9, .9)
-    draw_string(168, 94, "Type", .9, .9, .9)
-
-    --create clouds data boxes
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(52, 52, 228, 90)
-    --left column
-    graphics.set_color(0, 0, 0, .425)
-    graphics.set_color(.1, .1, .3, .45)
-    graphics.draw_rectangle(53, 77, 138, 89)
-    graphics.set_color(.1, .1, .6, .35)
-    graphics.draw_rectangle(53, 65, 138, 77)
-    graphics.set_color(.1, .1, .9, .25)
-    graphics.draw_rectangle(53, 53, 138, 65)
-    --right column
-    graphics.set_color(.0, .0, .0, .45)
-    graphics.draw_rectangle(139, 77, 227, 89)
-    graphics.set_color(.1, .1, .1, .35)
-    graphics.draw_rectangle(139, 65, 227, 77)
-    graphics.set_color(.2, .2, .2, .25)
-    graphics.draw_rectangle(139, 53, 227, 65)
-
-    if batteryOn then
-        --display data only if the battery is on
-        draw_string(78, 80, string.format('%05.0f', cloudAlt2 * 3.28), .9, .9, .9)
-        draw_string(143, 80, clType2, 0, 1, 0, .8)
-
-        draw_string(78, 68, string.format('%05.0f', cloudAlt1 * 3.28), .9, .9, .9)
-        draw_string(143, 68, clType1, 0, 1, 0, .8)
-
-        draw_string(78, 56, string.format('%05.0f', cloudAlt0 * 3.28), .9, .9, .9)
-        draw_string(143, 56, clType0, 0, 1, 0, .9)
+        draw_fill_rect_text_center(left, top - 57, 87, 14, .6, .6, .6, .5,
+                1, .1, .1, .3, .45,
+                string.format('%05.0f', cloudAlt2 * 3.28), .9, .9, .9)
+        draw_fill_rect_text_center(left, top - 70, 87, 14, .6, .6, .6, .5,
+                1, .1, .1, .6, .35,
+                string.format('%05.0f', cloudAlt1 * 3.28), .9, .9, .9)
+        draw_fill_rect_text_center(left, top - 83, 87, 14, .6, .6, .6, .5,
+                1, .1, .1, .9, .25,
+                string.format('%05.0f', cloudAlt0 * 3.28), .9, .9, .9)
+        draw_fill_rect_text_left(left + 86, top - 57, 88, 14, .6, .6, .6, .5,
+                1, .0, .0, .0, .45,
+                clType2, 0, 1, 0)
+        draw_fill_rect_text_left(left + 86, top - 70, 88, 14, .6, .6, .6, .5,
+                1, .1, .1, .1, .35,
+                clType1, 0, 1, 0)
+        draw_fill_rect_text_left(left + 86, top - 83, 88, 14, .6, .6, .6, .5,
+                1, .2, .2, .2, .25,
+                clType0, 0, 1, 0)
     end
 end
 
-function draw_simulator()
+function draw_simulator(left, top)
     fps = 1 / fpsRate
-    draw_string(52, 36, "Simulator Data", .9, .9, .2)
+    draw_string(left, top - 10, "Simulator Data", .9, .9, .2)
+    draw_string(left, top - 23, "FPS", .9, .9, .9)
+    draw_string(left + 95, top - 23, "GPU", .9, .9, .9)
 
-    draw_string(87, 23, "FPS", .9, .9, .9)
-
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(110, 19, 139, 33)
     if fps <= 18 then
-        graphics.set_color(1, 0, 0, .5)
+        draw_fill_rect_text_center(left + 33, top - 13, 29, 14, .6, .6, .6, .5,
+                1, 1, 0, 0, .5,
+                string.format('%03.0f', fps), 1, 1, 0)
     else
-        graphics.set_color(0, 0, 0, .425)
+        draw_fill_rect_text_center(left + 33, top - 13, 29, 14, .6, .6, .6, .5,
+                1, 0, 0, 0, .425,
+                string.format('%03.0f', fps), 0, 1, 0)
     end
-    graphics.draw_rectangle(111, 20, 138, 32)
-    if fps <= 18 then
-        draw_string(114, 23, string.format('%03.0f', fps), 1, 1, 0)
-    else
-        draw_string(114, 23, string.format('%03.0f', fps), 0, 1, 0)--, .8)
-    end
-
-    draw_string(158, 23, "GPU", .9, .9, .9)
-
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(185, 19, 228, 33)
-    graphics.set_color(0, 0, 0, .425)
-    graphics.draw_rectangle(186, 20, 227, 32)
-
-    draw_string(191, 23, string.format('%.3f', gpuTime), 0, 1, 0, .8)
+    draw_fill_rect_text_center(left + 131, top - 13, 43, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.3f', gpuTime), 0, 1, 0)
 end
 
 function draw_engine()
