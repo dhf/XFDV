@@ -116,6 +116,7 @@ function getDataRefs()
     dataref("windSP", "sim/weather/aircraft/wind_speed_kts", "readonly", 0)
     dataref("windDIR", "sim/weather/aircraft/wind_direction_degt", "readonly", 0)
     dataref("ambiTemp", "sim/weather/aircraft/temperature_ambient_deg_c")
+    dataref("isaTemp", "sim/weather/region/sealevel_temperature_c")
     dataref("precip", "sim/weather/region/rain_percent")
 
     dataref("cloudType0", "sim/weather/aircraft/cloud_type", "readonly", 0)
@@ -146,6 +147,10 @@ function getDataRefs()
     dataref("apAnnunciator", "sim/cockpit/warnings/annunciators/autopilot")
     dataref("apVNAVPitch", "sim/cockpit2/autopilot/flight_director_pitch_deg")
 
+    dataref("overVne", "sim/aircraft/view/acf_Vne")
+    dataref("overVno", "sim/aircraft/view/acf_Vno")
+
+
 
     --End of Datarefs
 end
@@ -175,28 +180,31 @@ end
 
 local function draw_fill_rect_text_center(left, top, length, height, rBorder, gBorder, bBorder, alphaBorder,
                                           lineWidth, rFill, gFill, bFill, alphaFill,
-                                          text, rText, gText, bText)
+                                          text, rText, gText, bText, showText)
     draw_fill_rect(left, top, length, height, rBorder, gBorder, bBorder, alphaBorder, lineWidth, rFill, gFill, bFill, alphaFill)
     local strLen = measure_string(text)
-    draw_string(left + ((length - strLen) / 2), top - (height / 2 + 3), text, rText, gText, bText)
-
+    if showText then
+        draw_string(left + ((length - strLen) / 2), top - (height / 2 + 3), text, rText, gText, bText)
+    end
 end
 
 local function draw_fill_rect_text_left(left, top, length, height, rBorder, gBorder, bBorder, alphaBorder,
                                         lineWidth, rFill, gFill, bFill, alphaFill,
-                                        text, rText, gText, bText)
+                                        text, rText, gText, bText, showText)
     draw_fill_rect(left, top, length, height, rBorder, gBorder, bBorder, alphaBorder, lineWidth, rFill, gFill, bFill, alphaFill)
-    draw_string(left + 4, top - 10, text, rText, gText, bText)
-
+    if showText then
+        draw_string(left + 4, top - 10, text, rText, gText, bText)
+    end
 end
 
 local function draw_fill_rect_text_right(left, top, length, height, rBorder, gBorder, bBorder, alphaBorder,
                                          lineWidth, rFill, gFill, bFill, alphaFill,
-                                         text, rText, gText, bText)
+                                         text, rText, gText, bText, showText)
     draw_fill_rect(left, top, length, height, rBorder, gBorder, bBorder, alphaBorder, lineWidth, rFill, gFill, bFill, alphaFill)
-    local strLen = measure_string(text)
-    draw_string(left + (length - strLen - 4), top - 10, text, rText, gText, bText)
-
+    if showText then
+        local strLen = measure_string(text)
+        draw_string(left + (length - strLen - 4), top - 10, text, rText, gText, bText)
+    end
 end
 
 function show_flight_data()
@@ -219,7 +227,7 @@ function show_flight_data()
         draw_simulator(left, bottom + 46)
     end
     if showLocation then
-        draw_location()
+        draw_location(col2Start + 10, bottom + 257)
     end
     if showEngine then
         draw_engine()
@@ -271,7 +279,7 @@ function draw_close_button()
     draw_string(44, 256, "x", 1, 1, 0)
 end
 
-function draw_location()
+function draw_location(left, top)
     local function double_box(y, height)
         graphics.set_color(.6, .6, .6, .5)
         graphics.draw_rectangle(col2Start + 66, y, col2Start + 66 + 136, y + height)
@@ -315,159 +323,126 @@ function draw_location()
     end
 
     --Time and Location
-    draw_string(col2Start + 10, 247, "Location Information", .9, .9, .2)
+    draw_string(left, top - 10, "Location Information", .9, .9, .2)
+    draw_string(left, top - 23, "Time", .9, .9, .9)
+    draw_string(left, top - 38, "Location", .9, .9, .9)
+    draw_string(left, top - 53, "Atm.Pr.", .9, .9, .9)
+    draw_string(left, top - 68, "OAT/ISA", .9, .9, .9)
 
-    draw_string(col2Start + 16, 234, "Time", .9, .9, .9)
-    double_box(230, 14)
-
-    if batteryOn then
-        --display data only if the battery is on
-        draw_string(col2Start + 71, 234, zuluHours .. ":" .. zuluMinutes .. " GMT", 0, 1, 0, .8)
-        draw_string(col2Start + 142, 234, localHours .. ":" .. localMinutes .. " LCL", 0, 1, 0, .8)
-    end
-
-    draw_string(col2Start + 16, 219, "Location", .9, .9, .9)
-    single_box(215, 14)
-
-    if batteryOn then
-        --display data only if the battery is on
-        draw_string(col2Start + 74, 219, string.format('%.3f', acftLat) .. nsLat .. " , " .. string.format('%.3f', acftLong) .. ewLong, 0, 1, 0, .8)
-    end
-
-    draw_string(col2Start + 16, 204, "Atm.Pr.", .9, .9, .9)
-    double_box(200, 14)
-
-    if batteryOn then
-        --display data only if the battery is on
-        draw_string(col2Start + 73, 204, string.format('%.2f', pressureP) .. " Set", 0, 1, 0, .8)
-        draw_string(col2Start + 144, 204, string.format('%.2f', pressureS) .. " SL", 0, 1, 0, .8)
-    end
-
-    draw_string(col2Start + 16, 188, "OAT", .9, .9, .9)
-    double_box(185, 14)
-
-    if batteryOn then
-        --display data only if the battery is on
-        draw_string(col2Start + 81, 189, string.format('%04.1f°C', ambiTemp), 0, 1, 0, .8)
-        draw_string(col2Start + 152, 189, string.format('%04.1f°F', ambiTempF), 0, 1, 0, .8)
-    end
+    draw_fill_rect_text_center(left + 49, top - 13, 72, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            zuluHours .. ":" .. zuluMinutes .. " GMT", 0, 1, 0, batteryOn)
+    draw_fill_rect_text_center(left + 120, top - 13, 72, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            localHours .. ":" .. localMinutes .. " LCL", 0, 1, 0, batteryOn)
+    draw_fill_rect_text_center(left + 49, top - 28, 143, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.3f', acftLat) .. nsLat .. " , " .. string.format('%.3f', acftLong) .. ewLong, 0, 1, 0, batteryOn)
+    draw_fill_rect_text_center(left + 49, top - 43, 72, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.2f', pressureP) .. " Set", 0, 1, 0, batteryOn)
+    draw_fill_rect_text_center(left + 120, top - 43, 72, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.2f', pressureS) .. " SL", 0, 1, 0, batteryOn)
+    draw_fill_rect_text_center(left + 49, top - 58, 72, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%04.1f°C', ambiTemp), 0, 1, 0, batteryOn)
+    draw_fill_rect_text_center(left + 120, top - 58, 72, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%04.1f°C', isaTemp), 0, 1, 0, batteryOn)
 
     --Special data area
-    graphics.set_color(.9, .9, .9, .2)
-    graphics.draw_rectangle(col2Start + 7, 127, col2Start + 7 + 199, 180)
-    graphics.set_color(.0, .2, .5, .1)
-    graphics.draw_rectangle(col2Start + 9, 129, col2Start + 9 + 195, 178)
+    draw_fill_rect(left, top - 77, 192, 53, .9, .9, .9, .2, 1, .0, .2, .5, .1)
 
     --Display istrument info
-    draw_string(col2Start + 14, 169, "Airspeed", .9, .9, .9)
-    draw_string(col2Start + 79, 169, "Bearing", .9, .9, .9)
-    draw_string(col2Start + 147, 169, "Altitude", .9, .9, .9)
-
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(col2Start + 10, 150, col2Start + 10 + 192, 164)
+    draw_string(left + 4, top - 88, "Airspeed", .9, .9, .9)
+    draw_string(left + 71, top - 88, "Bearing", .9, .9, .9)
+    draw_string(left + 139, top - 88, "Altitude", .9, .9, .9)
 
     ---Airspeed
-    graphics.set_color(0, 0, 0, .425)
-    graphics.draw_rectangle(col2Start + 11, 151, col2Start + 11 + 56, 163)
-
-    if batteryOn then
-        --display data only if the battery is on
-        if airSpeed >= 119.5 then
-            graphics.set_color(1, 0, 0, .45)
-            graphics.draw_rectangle(col2Start + 11, 151, col2Start + 11 + 56, 163)
-            draw_string(col2Start + 20, 154, string.format('%.0fKts', airSpeed), 1, 1, 0, 1)
-        elseif airSpeed >= 69.5 and airSpeed < 119.5 then
-            graphics.set_color(0, 0, 0, .175)
-            graphics.draw_rectangle(col2Start + 11, 151, col2Start + 11 + 56, 163)
-            draw_string(col2Start + 20, 154, string.format('%.0fKts', airSpeed), 0, 1, 0, 1)
-        elseif airSpeed >= 49.5 and airSpeed < 69.5 then
-            graphics.set_color(1, 1, 0, .6)
-            graphics.draw_rectangle(col2Start + 11, 151, col2Start + 11 + 56, 163)
-            draw_string(col2Start + 24, 154, string.format('%.0fKts', airSpeed), 0, 0, 0, 1)
-        elseif airSpeed >= 0 and airSpeed < 49.5 then
-            graphics.set_color(1, 0, 0, .45)
-            graphics.draw_rectangle(col2Start + 11, 151, col2Start + 11 + 56, 163)
-            draw_string(col2Start + 17, 154, "OnGrnd", 1, 1, 0, 1)
-        else
-            airSpeed = 0
-            graphics.set_color(0, 0, 0, .125)
-            graphics.draw_rectangle(col2Start + 11, 151, col2Start + 11 + 56, 163)
-            draw_string(col2Start + 26, 154, string.format('%.0fKts', airSpeed), 0, 1, 0, 1)
-        end
+    if airSpeed >= overVne then
+        draw_fill_rect_text_center(left + 2, top - 93, 62, 14, .6, .6, .6, .5,
+                1, 1, 0, 0, .45,
+                string.format('%.0fKts', airSpeed), 1, 1, 0, batteryOn)
+    elseif airSpeed >= overVno then
+        draw_fill_rect_text_center(left + 2, top - 93, 62, 14, .6, .6, .6, .5,
+                1, 1, 1, 0, .625,
+                string.format('%.0fKts', airSpeed), 1, 0, 0, batteryOn)
+    elseif airSpeed >= 69.5 and airSpeed < overVno then
+        draw_fill_rect_text_center(left + 2, top - 93, 62, 14, .6, .6, .6, .5,
+                1, 0, 0, 0, .425,
+                string.format('%.0fKts', airSpeed), 0, 1, 0, batteryOn)
+    elseif airSpeed >= 49.5 and airSpeed < 69.5 then
+        draw_fill_rect_text_center(left + 2, top - 93, 62, 14, .6, .6, .6, .5,
+                1, 1, 1, 0, .6,
+                string.format('%.0fKts', airSpeed), 0, 0, 0, batteryOn)
+    elseif airSpeed > 0 and airSpeed < 49.5 then
+        draw_fill_rect_text_center(left + 2, top - 93, 62, 14, .6, .6, .6, .5,
+                1, 1, 0, 0, .45,
+                string.format('%.0fKts', airSpeed), 1, 1, 0, batteryOn)
+    elseif airSpeed == 0 then
+        draw_fill_rect_text_center(left + 2, top - 93, 62, 14, .6, .6, .6, .5,
+                1, 0, 0, 0, .425,
+                "OnGrnd", 1, 1, 0, batteryOn)
     end
 
     --Bearing
-    graphics.set_color(0, 0, 0, .425)
-    graphics.draw_rectangle(col2Start + 68, 151, col2Start + 68 + 66, 163)
+    draw_fill_rect_text_center(left + 65, top - 93, 62, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%05.1fDeg', magBearing), 0, 1, 0, batteryOn)
 
-    if batteryOn then
-        --display data only if the battery is on
-        draw_string(col2Start + 74, 154, string.format('%05.1fDeg', magBearing), 0, .9, 0, 1)
-    end
-
-    ---Altitude AGL
-    graphics.set_color(0, 0, 0, .425)
-    graphics.draw_rectangle(col2Start + 135, 151, col2Start + 135 + 66, 163)
-
-    if batteryOn then
-        --display data only if the battery is on
-        if altFtAGL > 999.5 and altFtAGL <= 1500 then
-            --adjust display based on current AGL altitude
-            graphics.set_color(0, 1, 0, .6)
-            graphics.draw_rectangle(col2Start + 135, 151, col2Start + 135 + 66, 163)
-            draw_string(col2Start + 148, 154, string.format('%.0fFt', altFtAGL), 0, 0, 0, 1)
-        elseif altFtAGL > 499.5 and altFtAGL <= 999.5 then
-            graphics.set_color(1, 1, 0, .625)
-            graphics.draw_rectangle(col2Start + 135, 151, col2Start + 135 + 66, 163)
-            draw_string(col2Start + 148, 154, string.format('%.0fFt', altFtAGL), 0, 0, 0, 1)
-        elseif altFtAGL > 99.5 and altFtAGL <= 499.5 then
-            graphics.set_color(1, 1, 0, .625)
-            graphics.draw_rectangle(col2Start + 135, 151, col2Start + 135 + 66, 163)
-            draw_string(col2Start + 148, 154, string.format('%.0fFt', altFtAGL), 1, 0, 0, 1)
-        elseif altFtAGL <= 99.5 then
-            graphics.set_color(1, 0, 0, .6)
-            graphics.draw_rectangle(col2Start + 135, 151, col2Start + 135 + 66, 163)
-            draw_string(col2Start + 148, 154, string.format('%.0fFt', altFtAGL), 1, 1, 0, 1)
-        else
-            graphics.set_color(0, 0, 0, .125)
-            graphics.draw_rectangle(col2Start + 135, 151, col2Start + 135 + 66, 163)
-            draw_string(col2Start + 148, 154, string.format('%.0fFt', altFtAGL), 0, 1, 0, 1)
-        end
+    -- display Altitude AGL based on current value
+    if altFtAGL > 1500 then
+        draw_fill_rect_text_center(left + 128, top - 93, 62, 14, .6, .6, .6, .5,
+                1, 0, 0, 0, .425,
+                string.format('%.0fFt', altFtAGL), 0, 1, 0, batteryOn)
+    elseif altFtAGL > 999.5 and altFtAGL <= 1500 then
+        draw_fill_rect_text_center(left + 128, top - 93, 62, 14, .6, .6, .6, .5,
+                1, 0, 1, 0, .6,
+                string.format('%.0fFt', altFtAGL), 0, 0, 0, batteryOn)
+    elseif altFtAGL > 499.5 and altFtAGL <= 999.5 then
+        draw_fill_rect_text_center(left + 128, top - 93, 62, 14, .6, .6, .6, .5,
+                1, 1, 1, 0, .625,
+                string.format('%.0fFt', altFtAGL), 0, 0, 0, batteryOn)
+    elseif altFtAGL > 99.5 and altFtAGL <= 499.5 then
+        draw_fill_rect_text_center(left + 128, top - 93, 62, 14, .6, .6, .6, .5,
+                1, 1, 1, 0, .625,
+                string.format('%.0fFt', altFtAGL), 1, 0, 0, batteryOn)
+    elseif altFtAGL <= 99.5 then
+        draw_fill_rect_text_center(left + 128, top - 93, 62, 14, .6, .6, .6, .5,
+                1, 1, 0, 0, .6,
+                string.format('%.0fFt', altFtAGL), 1, 1, 0, batteryOn)
     end
 
     ---Flaps
-    draw_string(col2Start + 18, 136, "Flaps", 1, .9, .9, .9)
+    draw_string(left + 4, top - 121, "Flaps", .9, .9, .9)
 
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(col2Start + 51, 146, col2Start + 51 + 35, 132)
-    graphics.set_color(0, 0, 0, .425)
-    graphics.draw_rectangle(col2Start + 52, 145, col2Start + 52 + 33, 133)
-
-    if batteryOn then
-        --display data only if the battery is on
-        if flapsRatio == 0 then
-            draw_string(col2Start + 56, 136, string.format('%02.0f', flapsRatio) .. "%", 0, 1, 0, 1)
-        else
-            graphics.set_color(0, 0, .725, .5)
-            graphics.draw_rectangle(col2Start + 52, 145, col2Start + 52 + 33, 133)
-            draw_string(col2Start + 56, 136, string.format('%02.0f', flapsRatio) .. "%", 1, 1, 0, 1)
-        end
+    --display data only if the battery is on
+    if flapsRatio == 0 then
+        draw_fill_rect_text_center(left + 38, top - 111, 35, 14, .6, .6, .6, .5,
+                1, 0, 0, 0, .425,
+                string.format('%02.0f%%', flapsRatio), 0, 1, 0, batteryOn)
+    else
+        draw_fill_rect_text_center(left + 38, top - 111, 35, 14, .6, .6, .6, .5,
+                1, 0, 0, .725, .5,
+                string.format('%02.0f%%', flapsRatio), 1, 1, 0, batteryOn)
     end
 
     --Parking brake info
-    draw_string(col2Start + 92, 136, "Parking Brake", .9, .9, .9)
-
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(col2Start + 175, 146, col2Start + 175 + 27, 132)
+    draw_string(left + 80, top - 121, "Parking Brake", .9, .9, .9)
 
     if parkBrake == 1 then
-        graphics.set_color(1, 0, 0, .75)
-        graphics.draw_rectangle(col2Start + 175, 145, col2Start + 175 + 25, 133)
-        draw_string(col2Start + 179, 136, "ON", 1, 1, 0)
+        draw_fill_rect_text_center(left + 155, top - 111, 35, 14, .6, .6, .6, .5,
+                1, 1, 0, 0, .6,
+                "ON", 1, 1, 0, true)
+    elseif parkBrake == 0 then
+        draw_fill_rect_text_center(left + 155, top - 111, 35, 14, .6, .6, .6, .5,
+                1, 0, .8, 0, .75,
+                "OFF", 0, 0, 0, true)
     else
-        graphics.set_color(0, .8, 0, .75)
-        graphics.draw_rectangle(col2Start + 175, 145, col2Start + 175 + 25, 133)
-        draw_string(col2Start + 177, 136, "OFF", 0, 0, 0)
+        draw_fill_rect_text_center(left + 155, top - 111, 35, 14, .6, .6, .6, .5,
+                1, 0, 0, .725, .5,
+                string.format('%02.0f%%', parkBrake * 100), 1, 1, 0, true)
     end
 end
 
@@ -476,10 +451,10 @@ function draw_aircraft(left, top)
     draw_string(left, top - 10, "AIRCRAFT", .9, .9, .2)
     draw_fill_rect_text_center(left + 59, top, 58, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
-            acftName, 1, 1, 0)
+            acftName, 1, 1, 0, true)
     draw_fill_rect_text_center(left + 59 + 57, top, 58, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
-            tailNum, 1, 1, 0)
+            tailNum, 1, 1, 0, true)
 
     ----Switches
     draw_fill_rect(left, top - 16, 174, 43, .6, .6, .6, .5, 1, 0, 0, 0, .425)
@@ -495,26 +470,24 @@ function draw_aircraft(left, top)
     draw_string(left, top - 70, "Main Battery", .9, .9, .9)
     draw_string(left, top - 87, "Oil Pressure", .9, .9, .9)
     draw_string(left, top - 103, "Vacuum Press", .9, .9, .9)
-    if batteryOn then
-        if batteryAmps <= -0.0 then
-            draw_fill_rect_text_center(left + 81, top - 61, 47, 14, .6, .6, .6, .5,
-                    1, 1, 0, 0, .8,
-                    string.format('%.1fA', batteryAmps), 1, 1, 0)
-        else
-            draw_fill_rect_text_center(left + 81, top - 61, 47, 14, .6, .6, .6, .5,
-                    1, 0, 0, 0, .425,
-                    string.format('%.1fA', batteryAmps), 0, 1, 0)
-        end
-        draw_fill_rect_text_center(left + 127, top - 61, 47, 14, .6, .6, .6, .5,
+    if batteryOn and batteryAmps <= -0.0 then
+        draw_fill_rect_text_center(left + 81, top - 61, 47, 14, .6, .6, .6, .5,
+                1, 1, 0, 0, .8,
+                string.format('%.1fA', batteryAmps), 1, 1, 0, batteryOn)
+    else
+        draw_fill_rect_text_center(left + 81, top - 61, 47, 14, .6, .6, .6, .5,
                 1, 0, 0, 0, .425,
-                string.format('%.1fV', batteryVolts), 0, 1, 0)
-        draw_fill_rect_text_center(left + 81, top - 77, 47, 14, .6, .6, .6, .5,
-                1, 0, 0, 0, .425,
-                string.format('%.2f', oilPressure), 0, 1, 0)
-        draw_fill_rect_text_center(left + 81, top - 93, 47, 14, .6, .6, .6, .5,
-                1, 0, 0, 0, .425,
-                string.format('%02.2f', vacuumRatio), 0, 1, 0)
+                string.format('%.1fA', batteryAmps), 0, 1, 0, batteryOn)
     end
+    draw_fill_rect_text_center(left + 127, top - 61, 47, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.1fV', batteryVolts), 0, 1, 0, batteryOn)
+    draw_fill_rect_text_center(left + 81, top - 77, 47, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.2f', oilPressure), 0, 1, 0, batteryOn)
+    draw_fill_rect_text_center(left + 81, top - 93, 47, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%02.2f', vacuumRatio), 0, 1, 0, batteryOn)
 end
 
 function draw_weather(left, top)
@@ -544,57 +517,51 @@ function draw_weather(left, top)
     --wind dir box
     draw_string(left, top - 23, "Wind", .9, .9, .9)
     draw_string(left + 69, top - 23, "at", .9, .9, .9)
-    if batteryOn then
-        draw_fill_rect_text_center(left + 32, top - 13, 31, 14, .6, .6, .6, .5,
-                1, 0, 0, 0, .425,
-                string.format('%03.0f', math.ceil(windDIR)), 0, 1, 0)
-        draw_fill_rect_text_center(left + 83, top - 13, 46, 14, .6, .6, .6, .5,
-                1, 0, 0, 0, .425,
-                string.format('%02.0f', math.ceil(windSP)) .. " Kts", 0, 1, 0)
-        draw_fill_rect_text_center(left + 128, top - 13, 46, 14, .6, .6, .6, .5,
-                1, 0, 0, 0, .425,
-                string.format('%02.0f', math.ceil(windMPH)) .. " Mph", 0, 1, 0)
-    end
+    draw_fill_rect_text_center(left + 32, top - 13, 31, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%03.0f', math.ceil(windDIR)), 0, 1, 0, batteryOn)
+    draw_fill_rect_text_center(left + 83, top - 13, 46, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%02.0f', math.ceil(windSP)) .. " Kts", 0, 1, 0, batteryOn)
+    draw_fill_rect_text_center(left + 128, top - 13, 46, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%02.0f', math.ceil(windMPH)) .. " Mph", 0, 1, 0, batteryOn)
 
     --Turbulence/Precip/Visibility
     draw_string(left, top - 39, "Turb.", .9, .9, .9)
     draw_string(left + 63, top - 39, "Precip.", .9, .9, .9)
     draw_string(left + 124, top - 39, "Vis.", .9, .9, .9)
 
-    if batteryOn then
-        draw_fill_rect_text_center(left + 32, top - 29, 25, 14, .6, .6, .6, .5,
-                1, 0, 0, 0, .425,
-                string.format('%.1f', turbulence), 0, 1, 0)
-        draw_fill_rect_text_center(left + 101, top - 29, 17, 14, .6, .6, .6, .5,
-                1, 0, 0, 0, .425,
-                string.format('%.0f', precip), 0, 1, 0)
-        draw_fill_rect_text_center(left + 145, top - 29, 29, 14, .6, .6, .6, .5,
-                1, 0, 0, 0, .425,
-                string.format('%.0f', visMiles), 0, 1, 0)
-    end
+    draw_fill_rect_text_center(left + 32, top - 29, 25, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.1f', turbulence), 0, 1, 0, batteryOn)
+    draw_fill_rect_text_center(left + 101, top - 29, 17, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.0f', precip), 0, 1, 0, batteryOn)
+    draw_fill_rect_text_center(left + 145, top - 29, 29, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.0f', visMiles), 0, 1, 0, batteryOn)
 
     draw_string(left, top - 53, "Clouds at Alt.", .9, .9, .9)
     draw_string(left + 90, top - 53, "Type", .9, .9, .9)
-    if batteryOn then
-        draw_fill_rect_text_center(left, top - 57, 87, 14, .6, .6, .6, .5,
-                1, .1, .1, .3, .45,
-                string.format('%05.0f', cloudAlt2 * 3.28), .9, .9, .9)
-        draw_fill_rect_text_center(left, top - 70, 87, 14, .6, .6, .6, .5,
-                1, .1, .1, .6, .35,
-                string.format('%05.0f', cloudAlt1 * 3.28), .9, .9, .9)
-        draw_fill_rect_text_center(left, top - 83, 87, 14, .6, .6, .6, .5,
-                1, .1, .1, .9, .25,
-                string.format('%05.0f', cloudAlt0 * 3.28), .9, .9, .9)
-        draw_fill_rect_text_left(left + 86, top - 57, 88, 14, .6, .6, .6, .5,
-                1, .0, .0, .0, .45,
-                clType2, 0, 1, 0)
-        draw_fill_rect_text_left(left + 86, top - 70, 88, 14, .6, .6, .6, .5,
-                1, .1, .1, .1, .35,
-                clType1, 0, 1, 0)
-        draw_fill_rect_text_left(left + 86, top - 83, 88, 14, .6, .6, .6, .5,
-                1, .2, .2, .2, .25,
-                clType0, 0, 1, 0)
-    end
+    draw_fill_rect_text_center(left, top - 57, 87, 14, .6, .6, .6, .5,
+            1, .1, .1, .3, .45,
+            string.format('%05.0f', cloudAlt2 * 3.28), .9, .9, .9, batteryOn)
+    draw_fill_rect_text_center(left, top - 70, 87, 14, .6, .6, .6, .5,
+            1, .1, .1, .6, .35,
+            string.format('%05.0f', cloudAlt1 * 3.28), .9, .9, .9, batteryOn)
+    draw_fill_rect_text_center(left, top - 83, 87, 14, .6, .6, .6, .5,
+            1, .1, .1, .9, .25,
+            string.format('%05.0f', cloudAlt0 * 3.28), .9, .9, .9, batteryOn)
+    draw_fill_rect_text_left(left + 86, top - 57, 88, 14, .6, .6, .6, .5,
+            1, .0, .0, .0, .45,
+            clType2, 0, 1, 0, batteryOn)
+    draw_fill_rect_text_left(left + 86, top - 70, 88, 14, .6, .6, .6, .5,
+            1, .1, .1, .1, .35,
+            clType1, 0, 1, 0, batteryOn)
+    draw_fill_rect_text_left(left + 86, top - 83, 88, 14, .6, .6, .6, .5,
+            1, .2, .2, .2, .25,
+            clType0, 0, 1, 0, batteryOn)
 end
 
 function draw_simulator(left, top)
@@ -606,15 +573,15 @@ function draw_simulator(left, top)
     if fps <= 18 then
         draw_fill_rect_text_center(left + 33, top - 13, 29, 14, .6, .6, .6, .5,
                 1, 1, 0, 0, .5,
-                string.format('%03.0f', fps), 1, 1, 0)
+                string.format('%03.0f', fps), 1, 1, 0, true)
     else
         draw_fill_rect_text_center(left + 33, top - 13, 29, 14, .6, .6, .6, .5,
                 1, 0, 0, 0, .425,
-                string.format('%03.0f', fps), 0, 1, 0)
+                string.format('%03.0f', fps), 0, 1, 0, true)
     end
     draw_fill_rect_text_center(left + 131, top - 13, 43, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
-            string.format('%.3f', gpuTime), 0, 1, 0)
+            string.format('%.3f', gpuTime), 0, 1, 0, true)
 end
 
 function draw_engine()
@@ -965,13 +932,13 @@ end
 local function power_warn_box(left, top)
     draw_fill_rect_text_center(left, top, 200, 35, .6, .6, .6, .5,
             1, .8, .8, .2, .6,
-            "NO POWER! - Turn Battery On", 1, 0, 0)
+            "NO POWER! - Turn Battery On", 1, 0, 0, true)
 end
 
 local function pause_warn_box(left, top)
     draw_fill_rect_text_center(left, top, 200, 35, .6, .6, .6, .5,
             1, .8, .8, .2, .6,
-            "** SIMULATOR PAUSED **", 1, 0, 0)
+            "** SIMULATOR PAUSED **", 1, 0, 0, true)
 end
 
 function mainProg()
