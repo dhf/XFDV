@@ -16,9 +16,8 @@ if XPLANE_VERSION < 12000 then
     return
 end
 
-jjjLib1.addParam(pluginId, "liquidUnit", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "G" }, "")
-jjjLib1.addParam(pluginId, "weightUnit", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "L" }, "")
-jjjLib1.addParam(pluginId, "tempUnit", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "F" }, "")
+jjjLib1.addParam(pluginId, "liquidUnit", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "L" }, "")
+jjjLib1.addParam(pluginId, "tempUnit", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "C" }, "")
 jjjLib1.addParam(pluginId, "showAircraft", { ["save"] = "global", ["autosave"] = true, ["dflt"] = true }, "")
 jjjLib1.addParam(pluginId, "showWeather", { ["save"] = "global", ["autosave"] = true, ["dflt"] = true }, "")
 jjjLib1.addParam(pluginId, "showSimulator", { ["save"] = "global", ["autosave"] = true, ["dflt"] = true }, "")
@@ -51,7 +50,6 @@ function load_params()
 
     -- units
     liquidUnit = XFDV_param("liquidUnit")
-    weightUnit = XFDV_param("weightUnit")
     tempUnit = XFDV_param("tempUnit")
     -- control visibility of informations
     showAircraft = XFDV_param("showAircraft")
@@ -95,6 +93,7 @@ function getDataRefs()
     dataref("engRPMS", "sim/cockpit2/engine/indicators/engine_speed_rpm", 0, 0)
     dataref("fuelAvail", "sim/cockpit2/fuel/fuel_quantity", 0, 0)
     dataref("airSpeed", "sim/cockpit2/gauges/indicators/airspeed_kts_pilot")
+    dataref("gndSpeed", "sim/cockpit2/gauges/indicators/ground_speed_kt")
     dataref("fuelFlow", "sim/cockpit2/engine/indicators/fuel_flow_kg_sec", 0, 0)
 
     -- GPS
@@ -102,14 +101,12 @@ function getDataRefs()
 
     --FlightModel
     dataref("parkBrake", "sim/flightmodel/controls/parkbrake")
-    dataref("fuelKGS", "sim/flightmodel/engine/ENGN_FF_", 0, 0)
     dataref("egtC", "sim/flightmodel/engine/ENGN_EGT_c", 0, 0)
     dataref("batteryAmps", "sim/flightmodel/engine/ENGN_bat_amp", 0, 0)
     dataref("batteryVolts", "sim/flightmodel/engine/ENGN_bat_volt", 0, 0)
     dataref("flapsRatio", "sim/flightmodel2/wing/flap1_deg", 0, 0)
     dataref("magVar", "sim/flightmodel/position/magnetic_variation")
-    dataref("fuelTnk1", "sim/flightmodel/weight/m_fuel1")
-    dataref("fuelTnk2", "sim/flightmodel/weight/m_fuel2")
+    dataref("fuelAvailKgSum", "sim/flightmodel/weight/m_fuel_total")
 
     --Weather
     dataref("pressureSPas", "sim/weather/region/sealevel_pressure_pas")
@@ -228,9 +225,10 @@ function show_flight_data()
     end
     if showLocation then
         draw_location(col2Start + 10, bottom + 257)
+        draw_av_measurements(col2Start + 10, bottom + 180)
     end
     if showEngine then
-        draw_engine()
+        draw_engine(col2Start + 10, bottom + 119)
     end
     if showRadio then
         draw_radio()
@@ -242,19 +240,27 @@ end
 
 function calc_fuel_data()
     --Calculate fuel data
-    fuelAvail = fuelTnk1 + fuelTnk2
-    fuelLBS = fuelAvail * 2.20462
-    fuelGAL = fuelLBS / 6
-    fuelAvailGal = (fuelAvail * 2.20462) / 6
-    fuelFlowMin = fuelFlow * 60
-    fuelFlowHour = fuelFlowMin * 60
-    fuelFlowHourLBS = fuelFlowHour * 2.20462
-    fuelFlowHourGal = fuelFlowHourLBS / 6
-    fuelRemain = fuelAvailGal / fuelFlowHourGal
-    -- Limit fuel hours remaining if engine is not running (for display purproses only)
-    if fuelRemain >= 20 then
-        fuelRemain = 20
+    local fuelAvailLiter = fuelAvailKgSum * 1.34603
+    local fuelAvailGal = fuelAvailKgSum * 0.35558
+    local fuelFlowHourKg = fuelFlow * 60 * 60
+    local fuelFlowHourLiter = fuelFlowHourKg * 1.34603
+    local fuelFlowHourGal = fuelFlowHourKg * 0.35558
+
+    if liquidUnit == "G" then
+        fuelAvail = fuelAvailGal
+        fuelFlowHour = fuelFlowHourGal
+        fuelRemain = fuelAvailGal / fuelFlowHourGal
+        fuelUnit = "Gal"
+    else
+        fuelAvail = fuelAvailLiter
+        fuelFlowHour = fuelFlowHourLiter
+        fuelRemain = fuelAvailLiter / fuelFlowHourLiter
+        fuelUnit = "Ltr"
     end
+    ---- Limit fuel hours remaining if engine is not running (for display purproses only)
+    --if fuelRemain >= 20 then
+    --    fuelRemain = 20
+    --end
 end
 
 function calc_weather_data()
@@ -318,8 +324,9 @@ function draw_location(left, top)
         ewLong = "E"
     end
 
-    if airSpeed <= 0 then
+    if airSpeed <= 0 or round(gndSpeed) == 0 then
         airSpeed = 0
+        altFtAGL = 0
     end
 
     --Time and Location
@@ -350,99 +357,114 @@ function draw_location(left, top)
     draw_fill_rect_text_center(left + 120, top - 58, 72, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%04.1f°C', isaTemp), 0, 1, 0, batteryOn)
+end
 
-    --Special data area
-    draw_fill_rect(left, top - 77, 192, 53, .9, .9, .9, .2, 1, .0, .2, .5, .1)
-
-    --Display istrument info
-    draw_string(left + 4, top - 88, "Airspeed", .9, .9, .9)
-    draw_string(left + 71, top - 88, "Bearing", .9, .9, .9)
-    draw_string(left + 139, top - 88, "Altitude", .9, .9, .9)
+function draw_av_measurements(left, top)
+    draw_string(left, top - 10, "Aviation Measurements", .9, .9, .2)
+    draw_string(left, top - 23, "AirSp.", .9, .9, .9)
+    draw_string(left, top - 38, "GndSp.", .9, .9, .9)
+    draw_string(left + 103, top - 23, "Bear.", .9, .9, .9)
+    draw_string(left + 103, top - 38, "Alt.", .9, .9, .9)
 
     ---Airspeed
     if airSpeed >= overVne then
-        draw_fill_rect_text_center(left + 2, top - 93, 62, 14, .6, .6, .6, .5,
+        draw_fill_rect_text_center(left + 49, top - 13, 47, 14, .6, .6, .6, .5,
                 1, 1, 0, 0, .45,
                 string.format('%.0fKts', airSpeed), 1, 1, 0, batteryOn)
     elseif airSpeed >= overVno then
-        draw_fill_rect_text_center(left + 2, top - 93, 62, 14, .6, .6, .6, .5,
+        draw_fill_rect_text_center(left + 49, top - 13, 47, 14, .6, .6, .6, .5,
                 1, 1, 1, 0, .625,
                 string.format('%.0fKts', airSpeed), 1, 0, 0, batteryOn)
     elseif airSpeed >= 69.5 and airSpeed < overVno then
-        draw_fill_rect_text_center(left + 2, top - 93, 62, 14, .6, .6, .6, .5,
+        draw_fill_rect_text_center(left + 49, top - 13, 47, 14, .6, .6, .6, .5,
                 1, 0, 0, 0, .425,
                 string.format('%.0fKts', airSpeed), 0, 1, 0, batteryOn)
     elseif airSpeed >= 49.5 and airSpeed < 69.5 then
-        draw_fill_rect_text_center(left + 2, top - 93, 62, 14, .6, .6, .6, .5,
+        draw_fill_rect_text_center(left + 49, top - 13, 47, 14, .6, .6, .6, .5,
                 1, 1, 1, 0, .6,
                 string.format('%.0fKts', airSpeed), 0, 0, 0, batteryOn)
     elseif airSpeed > 0 and airSpeed < 49.5 then
-        draw_fill_rect_text_center(left + 2, top - 93, 62, 14, .6, .6, .6, .5,
+        draw_fill_rect_text_center(left + 49, top - 13, 47, 14, .6, .6, .6, .5,
                 1, 1, 0, 0, .45,
                 string.format('%.0fKts', airSpeed), 1, 1, 0, batteryOn)
     elseif airSpeed == 0 then
-        draw_fill_rect_text_center(left + 2, top - 93, 62, 14, .6, .6, .6, .5,
+        draw_fill_rect_text_center(left + 49, top - 13, 47, 14, .6, .6, .6, .5,
                 1, 0, 0, 0, .425,
                 "OnGrnd", 1, 1, 0, batteryOn)
     end
 
-    --Bearing
-    draw_fill_rect_text_center(left + 65, top - 93, 62, 14, .6, .6, .6, .5,
+    ---Ground speed
+    if round(gndSpeed) > 0 then
+        draw_fill_rect_text_center(left + 49, top - 28, 47, 14, .6, .6, .6, .5,
+                1, 0, 0, 0, .425,
+                string.format('%.0fKts', gndSpeed), 0, 1, 0, batteryOn)
+    else
+        draw_fill_rect_text_center(left + 49, top - 28, 47, 14, .6, .6, .6, .5,
+                1, 0, 0, 0, .425,
+                "OnGrnd", 1, 1, 0, batteryOn)
+    end
+
+    ----Bearing
+    draw_fill_rect_text_center(left + 134, top - 13, 58, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%05.1fDeg', magBearing), 0, 1, 0, batteryOn)
 
     -- display Altitude AGL based on current value
     if altFtAGL > 1500 then
-        draw_fill_rect_text_center(left + 128, top - 93, 62, 14, .6, .6, .6, .5,
+        draw_fill_rect_text_center(left + 134, top - 28, 58, 14, .6, .6, .6, .5,
                 1, 0, 0, 0, .425,
                 string.format('%.0fFt', altFtAGL), 0, 1, 0, batteryOn)
     elseif altFtAGL > 999.5 and altFtAGL <= 1500 then
-        draw_fill_rect_text_center(left + 128, top - 93, 62, 14, .6, .6, .6, .5,
+        draw_fill_rect_text_center(left + 134, top - 28, 58, 14, .6, .6, .6, .5,
                 1, 0, 1, 0, .6,
                 string.format('%.0fFt', altFtAGL), 0, 0, 0, batteryOn)
     elseif altFtAGL > 499.5 and altFtAGL <= 999.5 then
-        draw_fill_rect_text_center(left + 128, top - 93, 62, 14, .6, .6, .6, .5,
+        draw_fill_rect_text_center(left + 134, top - 28, 58, 14, .6, .6, .6, .5,
                 1, 1, 1, 0, .625,
                 string.format('%.0fFt', altFtAGL), 0, 0, 0, batteryOn)
     elseif altFtAGL > 99.5 and altFtAGL <= 499.5 then
-        draw_fill_rect_text_center(left + 128, top - 93, 62, 14, .6, .6, .6, .5,
+        draw_fill_rect_text_center(left + 134, top - 28, 58, 14, .6, .6, .6, .5,
                 1, 1, 1, 0, .625,
                 string.format('%.0fFt', altFtAGL), 1, 0, 0, batteryOn)
-    elseif altFtAGL <= 99.5 then
-        draw_fill_rect_text_center(left + 128, top - 93, 62, 14, .6, .6, .6, .5,
+    elseif altFtAGL <= 99.5 and altFtAGL ~= 0 then
+        draw_fill_rect_text_center(left + 134, top - 28, 58, 14, .6, .6, .6, .5,
                 1, 1, 0, 0, .6,
                 string.format('%.0fFt', altFtAGL), 1, 1, 0, batteryOn)
-    end
-
-    ---Flaps
-    draw_string(left + 4, top - 121, "Flaps", .9, .9, .9)
-
-    --display data only if the battery is on
-    if flapsRatio == 0 then
-        draw_fill_rect_text_center(left + 38, top - 111, 35, 14, .6, .6, .6, .5,
-                1, 0, 0, 0, .425,
-                string.format('%02.0f%%', flapsRatio), 0, 1, 0, batteryOn)
     else
-        draw_fill_rect_text_center(left + 38, top - 111, 35, 14, .6, .6, .6, .5,
-                1, 0, 0, .725, .5,
-                string.format('%02.0f%%', flapsRatio), 1, 1, 0, batteryOn)
+        draw_fill_rect_text_center(left + 134, top - 28, 58, 14, .6, .6, .6, .5,
+                1, 0, 0, 0, .425,
+                "OnGrnd", 1, 1, 0, batteryOn)
     end
 
     --Parking brake info
-    draw_string(left + 80, top - 121, "Parking Brake", .9, .9, .9)
+    draw_string(left, top - 53, "Parking Brake", .9, .9, .9)
 
     if parkBrake == 1 then
-        draw_fill_rect_text_center(left + 155, top - 111, 35, 14, .6, .6, .6, .5,
+        draw_fill_rect_text_center(left + 77, top - 43, 35, 14, .6, .6, .6, .5,
                 1, 1, 0, 0, .6,
                 "ON", 1, 1, 0, true)
     elseif parkBrake == 0 then
-        draw_fill_rect_text_center(left + 155, top - 111, 35, 14, .6, .6, .6, .5,
+        draw_fill_rect_text_center(left + 77, top - 43, 35, 14, .6, .6, .6, .5,
                 1, 0, .8, 0, .75,
                 "OFF", 0, 0, 0, true)
     else
-        draw_fill_rect_text_center(left + 155, top - 111, 35, 14, .6, .6, .6, .5,
+        draw_fill_rect_text_center(left + 77, top - 43, 35, 14, .6, .6, .6, .5,
                 1, 0, 0, .725, .5,
                 string.format('%02.0f%%', parkBrake * 100), 1, 1, 0, true)
+    end
+
+    ---Flaps
+    draw_string(left + 122, top - 53, "Flaps", .9, .9, .9)
+
+    --display data only if the battery is on
+    if flapsRatio == 0 then
+        draw_fill_rect_text_center(left + 157, top - 43, 35, 14, .6, .6, .6, .5,
+                1, 0, 0, 0, .425,
+                string.format('%02.0f%%', flapsRatio), 0, 1, 0, batteryOn)
+    else
+        draw_fill_rect_text_center(left + 157, top - 43, 35, 14, .6, .6, .6, .5,
+                1, 0, 0, .725, .5,
+                string.format('%02.0f%%', flapsRatio), 1, 1, 0, batteryOn)
     end
 end
 
@@ -584,85 +606,61 @@ function draw_simulator(left, top)
             string.format('%.3f', gpuTime), 0, 1, 0, true)
 end
 
-function draw_engine()
+function draw_engine(left, top)
     -- egt Temperature
-    egtF = (egtC * 9 / 5) + 32
+    if tempUnit == "F" then
+        egtValue = (egtC * 9 / 5) + 32
+    else
+        egtValue = egtC
+    end
 
     if engRPMS < 1 then
         engRPMS = 0
     end
 
     --Display engine data
-    draw_string(250, 115, "Engine Performance", .9, .9, .2)
-    draw_string(254, 103, "Mixture", .9, .9, .9)
-    draw_string(307, 103, "RPM", .9, .9, .9)
-    draw_string(373, 103, "EGT", .9, .9, .9)
+    draw_string(left, top - 10, "Engine Performance", .9, .9, .2)
+    draw_string(left, top - 23, "Mixture", .9, .9, .9)
+    draw_string(left + 49, top - 23, "RPM", .9, .9, .9)
+    draw_string(left + 85, top - 23, "EGT", .9, .9, .9)
+    draw_string(left + 134, top - 23, "Fuel Status", .9, .9, .9)
 
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(250, 84, 442, 98)
-    graphics.set_color(0, 0, 0, .425)
-    graphics.draw_rectangle(251, 85, 299, 97)
-    graphics.draw_rectangle(300, 85, 337, 97)
-    graphics.draw_rectangle(338, 85, 441, 97)
+    draw_fill_rect_text_center(left, top - 28, 46, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%02.0f%%', (mixture * 100)), 0, 1, 0, batteryOn)
+    draw_fill_rect_text_center(left + 45, top - 28, 39, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%04.0f', engRPMS), 0, 1, 0, batteryOn)
+    draw_fill_rect_text_center(left + 82, top - 28, 52, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.0f°%s', egtValue, tempUnit), 0, 1, 0, batteryOn)
 
-    if batteryOn then
-        --display data only if the battery is on
-        draw_string(265, 88, string.format('%02.0f', (mixture * 100)) .. "%", 0, 1, 0)
-        draw_string(305, 88, string.format('%04.0f', engRPMS), 0, 1, 0)
-        draw_string(344, 88, string.format('%.0f°C', egtC) .. " (" .. string.format('%.0f°F', egtF) .. ")", 0, 1, 0)
+    if fuelRemain <= 0.5 then
+        draw_fill_rect_text_center(left + 132, top - 28, 60, 14, .6, .6, .6, .5,
+                1, 1, 1, 0, .6,
+                "FUEL!!", 1, 0, 1, batteryOn)
+    elseif fuelRemain <= 1.0 then
+        draw_fill_rect_text_center(left + 132, top - 28, 60, 14, .6, .6, .6, .5,
+                1, 1, 1, 0, .6,
+                "CHECK", 0, 0, 0, batteryOn)
+    else
+        draw_fill_rect_text_center(left + 132, top - 28, 60, 14, .6, .6, .6, .5,
+                1, 0, 0, 0, .425,
+                "OK", 0, 1, 0, batteryOn)
     end
 
-    ---Fuel
-    draw_string(271, 68, "Fuel Status", .9, .9, .9)
-
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(337, 64, 442, 79)
-    graphics.set_color(0, 0, 0, .425)
-    graphics.draw_rectangle(338, 65, 441, 78)
-
-    if batteryOn then
-        --display data only if the battery is on
-        if fuelRemain <= 1.0 then
-            graphics.set_color(1, 1, 0, .6)
-            graphics.draw_rectangle(338, 65, 441, 78)
-            draw_string(355, 68, "CHECK FUEL", 0, 0, 0, 1)
-        elseif fuelRemain <= 0.5 then
-            graphics.set_color(1, 0, 0, .6)
-            graphics.draw_rectangle(338, 65, 441, 78)
-            draw_string(365, 68, "FUEL!!", 1, 1, 0, 1)
-        else
-            draw_string(365, 68, "FUEL OK", 0, 1, 0, 1)
-        end
-    end
-
-    draw_string(253, 52, "Fuel On Board", .9, .9, .9)
-
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(337, 48, 442, 62)
-    graphics.set_color(0, 0, 0, .425)
-    graphics.draw_rectangle(338, 49, 386, 61)
-    graphics.draw_rectangle(387, 49, 441, 61)
-
-    if batteryOn then
-        --display data only if the battery is on
-        draw_string(340, 52, string.format('%.0f Lbs', fuelLBS), 0, 1, 0, .8)
-        draw_string(389, 52, string.format('%.1f %s', fuelAvailGal, liquidUnit), 0, 1, 0, .8)
-    end
-
-    draw_string(263, 36, "Flow Rate", .9, .9, .9)
-    draw_string(370, 36, "Time", .9, .9, .9)
-
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(250, 19, 442, 33)
-    graphics.set_color(0, 0, 0, .5)
-    graphics.draw_rectangle(251, 20, 337, 32)
-    graphics.draw_rectangle(338, 20, 441, 32)
-
-    if batteryOn then
-        --display data only if the battery is on
-        draw_string(263, 23, string.format('%.1f %s/Hr', fuelFlowHourGal, liquidUnit), 0, 1, 0, .8)
-        draw_string(360, 23, string.format('%.2f Hrs', fuelRemain), 0, 1, 0, .8)
-    end
+    draw_string(left, top - 53, "Flow Rate", .9, .9, .9)
+    draw_string(left + 69, top - 53, "Time", .9, .9, .9)
+    draw_string(left + 119, top - 53, "Fuel On Board", .9, .9, .9)
+    draw_fill_rect_text_center(left, top - 58, 68, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.1f %s/h', fuelFlowHour, fuelUnit), 0, 1, 0, batteryOn)
+    draw_fill_rect_text_center(left + 67, top - 58, 52, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.1f hrs', fuelRemain), 0, 1, 0, batteryOn)
+    draw_fill_rect_text_center(left + 118, top - 58, 74, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.1f %s', fuelAvail, fuelUnit), 0, 1, 0, batteryOn)
 end
 
 function draw_radio()
