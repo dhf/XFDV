@@ -257,10 +257,10 @@ function calc_fuel_data()
         fuelRemain = fuelAvailLiter / fuelFlowHourLiter
         fuelUnit = "Ltr"
     end
-    ---- Limit fuel hours remaining if engine is not running (for display purproses only)
-    --if fuelRemain >= 20 then
-    --    fuelRemain = 20
-    --end
+    -- Limit fuel hours remaining if engine is not running (for display purproses only)
+    if fuelRemain >= 20 then
+        fuelRemain = 20
+    end
 end
 
 function calc_weather_data()
