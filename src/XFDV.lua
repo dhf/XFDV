@@ -1,5 +1,5 @@
 require("graphics")
-require("radio")
+-- require("radio")
 require("HUD")
 require("jjjLib1")
 local pluginName = "XFDV"
@@ -147,7 +147,19 @@ function getDataRefs()
     dataref("overVne", "sim/aircraft/view/acf_Vne")
     dataref("overVno", "sim/aircraft/view/acf_Vno")
 
+    -- Radio
+    dataref("com1_freq_hz", "sim/cockpit2/radios/actuators/com1_frequency_hz_833")
+    dataref("com1_stby_freq_hz", "sim/cockpit2/radios/actuators/com1_standby_frequency_hz_833")
+    dataref("com2_freq_hz", "sim/cockpit2/radios/actuators/com2_frequency_hz_833")
+    dataref("com2_stby_freq_hz", "sim/cockpit2/radios/actuators/com2_standby_frequency_hz_833")
+    dataref("nav1_freq_khz", "sim/cockpit2/radios/actuators/nav1_frequency_khz")
+    dataref("nav1_stby_freq_khz", "sim/cockpit2/radios/actuators/nav1_standby_frequency_khz")
+    dataref("nav2_freq_khz", "sim/cockpit2/radios/actuators/nav2_frequency_khz")
+    dataref("nav2_stby_freq_khz", "sim/cockpit2/radios/actuators/nav2_standby_frequency_khz")
 
+    -- Transponder
+    dataref("xprd", "sim/cockpit/radios/transponder_code")
+    dataref("xprdMode", "sim/cockpit/radios/transponder_mode")
 
     --End of Datarefs
 end
@@ -665,18 +677,16 @@ end
 
 function draw_radio()
     --Radios (data provided by require "radio" module)
-    com1 = COM1 / 100
-    com2 = COM2 / 100
-    nav1 = NAV1 / 100
-    nav2 = NAV2 / 100
-    com1S = COM1_STDBY / 100
-    com2S = COM2_STDBY / 100
-    nav1S = NAV1_STDBY / 100
-    nav2S = NAV2_STDBY / 100
-    adf1 = ADF1
-    adf1S = ADF1_STDBY
-    xpdr = SQUAWK
-    xpdrMode = TRANSPONDER_MODE
+    com1 = com1_freq_hz  / 1000
+    com2 = com2_freq_hz  / 1000
+    nav1 = nav1_freq_khz / 100
+    nav2 = nav2_freq_khz / 100
+    com1S = com1_stby_freq_hz  / 1000
+    com2S = com2_stby_freq_hz / 1000
+    nav1S = nav1_stby_freq_khz / 100
+    nav2S = nav2_stby_freq_khz / 100
+    adf1 = 1 --ADF1
+    adf1S = 1 --ADF1_STDBY
 
     local xpdrMode_tbl = {
         [0] = "OFF",
@@ -684,6 +694,9 @@ function draw_radio()
         [2] = "ON",
         [3] = "ALT",
         [4] = "TEST",
+        [5] = "GND",
+        [6] = "ta_only",
+        [7] = "ta/ra",
     }
     xpMode = xpdrMode_tbl[xpdrMode]
     --Radios
@@ -732,20 +745,20 @@ function draw_radio()
     if batteryOn then
         if avBusOn == 1 then
             --display data only if the avionics bus is on
-            draw_string(507, 220, string.format('%.2f', com1), .1, 1, .1)
-            draw_string(557, 220, string.format('%.2f', com1S), 0, .7, 0)
-            draw_string(507, 190, string.format('%.2f', nav1), .1, 1, .1)
-            draw_string(557, 190, string.format('%.2f', nav1S), 0, .7, 0)
+            draw_string(507, 220, string.format('%.3f', com1), .1, 1, .1)
+            draw_string(557, 220, string.format('%.3f', com1S), 0, .7, 0)
+            draw_string(507, 190, string.format('%.3f', nav1), .1, 1, .1)
+            draw_string(557, 190, string.format('%.3f', nav1S), 0, .7, 0)
             if xpMode ~= "OFF" then
                 draw_string(507, 142, xpdr, .1, 1, .1)
             end
             draw_string(557, 142, xpMode, .1, 7, .1)
             --if crossTie == 1 then
             --display data only if the cross tie to bus 2 is on
-            draw_string(507, 206, string.format('%.2f', com2), .1, 1, .1)
-            draw_string(557, 206, string.format('%.2f', com2S), 0, .7, 0)
-            draw_string(507, 176, string.format('%.2f', nav2), .1, 1, .1)
-            draw_string(557, 176, string.format('%.2f', nav2S), 0, .7, 0)
+            draw_string(507, 206, string.format('%.3f', com2), .1, 1, .1)
+            draw_string(557, 206, string.format('%.3f', com2S), 0, .7, 0)
+            draw_string(507, 176, string.format('%.3f', nav2), .1, 1, .1)
+            draw_string(557, 176, string.format('%.3f', nav2S), 0, .7, 0)
             draw_string(507, 160, adf1, .1, 1, .1)
             draw_string(557, 160, adf1S, 0, .7, 0)
             -- end
