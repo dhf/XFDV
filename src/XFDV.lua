@@ -1,5 +1,4 @@
 require("graphics")
--- require("radio")
 require("HUD")
 require("jjjLib1")
 local pluginName = "XFDV"
@@ -96,9 +95,6 @@ function getDataRefs()
     dataref("gndSpeed", "sim/cockpit2/gauges/indicators/ground_speed_kt")
     dataref("fuelFlow", "sim/cockpit2/engine/indicators/fuel_flow_kg_sec", 0, 0)
 
-    -- GPS
-    dataref("gpsNavID0", "sim/cockpit2/radios/indicators/gps_nav_id", 0, 0)
-
     --FlightModel
     dataref("parkBrake", "sim/flightmodel/controls/parkbrake")
     dataref("egtC", "sim/flightmodel/engine/ENGN_EGT_c", 0, 0)
@@ -152,14 +148,19 @@ function getDataRefs()
     dataref("com1_stby_freq_hz", "sim/cockpit2/radios/actuators/com1_standby_frequency_hz_833")
     dataref("com2_freq_hz", "sim/cockpit2/radios/actuators/com2_frequency_hz_833")
     dataref("com2_stby_freq_hz", "sim/cockpit2/radios/actuators/com2_standby_frequency_hz_833")
-    dataref("nav1_freq_khz", "sim/cockpit2/radios/actuators/nav1_frequency_khz")
-    dataref("nav1_stby_freq_khz", "sim/cockpit2/radios/actuators/nav1_standby_frequency_khz")
-    dataref("nav2_freq_khz", "sim/cockpit2/radios/actuators/nav2_frequency_khz")
-    dataref("nav2_stby_freq_khz", "sim/cockpit2/radios/actuators/nav2_standby_frequency_khz")
+    dataref("nav1_freq_hz", "sim/cockpit2/radios/actuators/nav1_frequency_hz")
+    dataref("nav1_stby_freq_hz", "sim/cockpit2/radios/actuators/nav1_standby_frequency_hz")
+    dataref("nav2_freq_hz", "sim/cockpit2/radios/actuators/nav2_frequency_hz")
+    dataref("nav2_stby_freq_hz", "sim/cockpit2/radios/actuators/nav2_standby_frequency_hz")
+    dataref("adf1_freq_hz", "sim/cockpit2/radios/actuators/adf1_frequency_hz")
+    dataref("adf1_stby_freq_hz", "sim/cockpit2/radios/actuators/adf1_standby_frequency_hz")
 
     -- Transponder
-    dataref("xprd", "sim/cockpit/radios/transponder_code")
-    dataref("xprdMode", "sim/cockpit/radios/transponder_mode")
+    dataref("xpdr", "sim/cockpit/radios/transponder_code")
+    dataref("xpdrMode", "sim/cockpit/radios/transponder_mode")
+
+    -- GPS
+    dataref("gpsNavID0", "sim/cockpit2/radios/indicators/gps_nav_id", 0, 0)
 
     --End of Datarefs
 end
@@ -679,14 +680,14 @@ function draw_radio()
     --Radios (data provided by require "radio" module)
     com1 = com1_freq_hz  / 1000
     com2 = com2_freq_hz  / 1000
-    nav1 = nav1_freq_khz / 100
-    nav2 = nav2_freq_khz / 100
+    nav1 = nav1_freq_hz / 100
+    nav2 = nav2_freq_hz / 100
     com1S = com1_stby_freq_hz  / 1000
     com2S = com2_stby_freq_hz / 1000
-    nav1S = nav1_stby_freq_khz / 100
-    nav2S = nav2_stby_freq_khz / 100
-    adf1 = 1 --ADF1
-    adf1S = 1 --ADF1_STDBY
+    nav1S = nav1_stby_freq_hz / 100
+    nav2S = nav2_stby_freq_hz / 100
+    adf1 = adf1_freq_hz
+    adf1S = adf1_stby_freq_hz
 
     local xpdrMode_tbl = {
         [0] = "OFF",
@@ -747,8 +748,8 @@ function draw_radio()
             --display data only if the avionics bus is on
             draw_string(507, 220, string.format('%.3f', com1), .1, 1, .1)
             draw_string(557, 220, string.format('%.3f', com1S), 0, .7, 0)
-            draw_string(507, 190, string.format('%.3f', nav1), .1, 1, .1)
-            draw_string(557, 190, string.format('%.3f', nav1S), 0, .7, 0)
+            draw_string(507, 190, string.format('%.2f', nav1), .1, 1, .1)
+            draw_string(557, 190, string.format('%.2f', nav1S), 0, .7, 0)
             if xpMode ~= "OFF" then
                 draw_string(507, 142, xpdr, .1, 1, .1)
             end
@@ -757,8 +758,8 @@ function draw_radio()
             --display data only if the cross tie to bus 2 is on
             draw_string(507, 206, string.format('%.3f', com2), .1, 1, .1)
             draw_string(557, 206, string.format('%.3f', com2S), 0, .7, 0)
-            draw_string(507, 176, string.format('%.3f', nav2), .1, 1, .1)
-            draw_string(557, 176, string.format('%.3f', nav2S), 0, .7, 0)
+            draw_string(507, 176, string.format('%.2f', nav2), .1, 1, .1)
+            draw_string(557, 176, string.format('%.2f', nav2S), 0, .7, 0)
             draw_string(507, 160, adf1, .1, 1, .1)
             draw_string(557, 160, adf1S, 0, .7, 0)
             -- end
