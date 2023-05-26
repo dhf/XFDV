@@ -3,6 +3,12 @@ require("HUD")
 require("jjjLib1")
 local pluginName = "XFDV"
 
+local leftMargin = 0
+local bottom = 0
+local border = 1
+local boxWidth = 215
+local boxHeight = 133
+
 if jjjLib1.version == nil or jjjLib1.version() < 1.7 then
     do_every_draw('draw_string(20, SCREEN_HIGHT - 104, "Plugin ' .. pluginName .. ': Requires library \'3jLib1\' version 1.7 or higher! Please search for \'3jLib1\' on x-plane.org, download and install current version of library.")')
     return
@@ -218,9 +224,7 @@ local function draw_fill_rect_text_right(left, top, length, height, rBorder, gBo
 end
 
 function show_flight_data()
-    local left = 53
-    local bottom = 0
-    draw_close_button()
+    local colMultiplicator = 0
     if showAircraft or showEngine then
         calc_fuel_data()
     end
@@ -228,27 +232,29 @@ function show_flight_data()
         calc_weather_data()
     end
     if showAircraft then
-        draw_aircraft(left, bottom + 257)
-    end
-    if showWeather then
-        draw_weather(left, bottom + 147)
-    end
-    if showSimulator then
-        draw_simulator(left, bottom + 46)
-    end
-    if showLocation then
-        draw_location(col2Start + 10, bottom + 257)
-        draw_av_measurements(col2Start + 10, bottom + 180)
+        draw_aircraft(leftMargin + (colMultiplicator * (boxWidth - border)), bottom + boxHeight)
+        colMultiplicator = colMultiplicator + 1
     end
     if showEngine then
-        draw_engine(col2Start + 10, bottom + 119)
+        draw_engine(leftMargin + (colMultiplicator * (boxWidth - border)), bottom + boxHeight)
+        colMultiplicator = colMultiplicator + 1
+    end
+    if showWeather then
+        draw_weather(leftMargin + (colMultiplicator * (boxWidth - border)), bottom + boxHeight)
+        colMultiplicator = colMultiplicator + 1
+    end
+    if showLocation then
+        draw_location(leftMargin + (colMultiplicator * (boxWidth - border)), bottom + boxHeight)
+        colMultiplicator = colMultiplicator + 1
     end
     if showRadio then
-        draw_radio()
+        draw_radio(leftMargin + (colMultiplicator * (boxWidth - border)), bottom + boxHeight)
+        colMultiplicator = colMultiplicator + 1
     end
     if showAutopilot then
-        draw_autopilot()
+        -- draw_autopilot()
     end
+    draw_close_button(leftMargin, bottom + boxHeight)
 end
 
 function calc_fuel_data()
@@ -290,29 +296,18 @@ function calc_weather_data()
     end
 end
 
-function draw_close_button()
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(41, 264, 53, 252)
-    graphics.set_color(1, 0, 0, .5)
-    graphics.draw_rectangle(42, 263, 52, 253)
-    draw_string(44, 256, "x", 1, 1, 0)
+function draw_close_button(left, top)
+    draw_fill_rect_text_center(left, top, 10, 10, .6, .6, .6, .5,
+            1, 1, 0, 0, .5,
+            "x", 1, 1, 0, true)
 end
 
-function draw_location(left, top)
-    local function double_box(y, height)
-        graphics.set_color(.6, .6, .6, .5)
-        graphics.draw_rectangle(col2Start + 66, y, col2Start + 66 + 136, y + height)
-        graphics.set_color(0, 0, 0, .425)
-        graphics.draw_rectangle(col2Start + 67, y + border, col2Start + 67 + 70, y + height - (2 * border))
-        graphics.draw_rectangle(col2Start + 138, y + border, col2Start + 138 + 63, y + height - (2 * border))
-    end
+function draw_location(boxLeft, boxTop)
+    draw_fill_rect(boxLeft, boxTop, boxWidth, boxHeight, .9, .9, .9, .325,
+            1, .1, .1, .1, .425)
 
-    local function single_box(y, height)
-        graphics.set_color(.6, .6, .6, .5)
-        graphics.draw_rectangle(col2Start + 66, y, col2Start + 66 + 136, y + height)
-        graphics.set_color(0, 0, 0, .425)
-        graphics.draw_rectangle(col2Start + 67, y + border, col2Start + 67 + 134, y + height - (2 * border))
-    end
+    left = boxLeft + 10
+    top = boxTop - 5
 
     acftLat = LATITUDE
     acftLong = LONGITUDE
@@ -370,9 +365,12 @@ function draw_location(left, top)
     draw_fill_rect_text_center(left + 120, top - 58, 72, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%04.1f°C', isaTemp), 0, 1, 0, batteryOn)
+
+    -- inline draw simulator info
+    draw_simulator_inline(left, top - 75)
 end
 
-function draw_av_measurements(left, top)
+function draw_av_measurements_inline(left, top)
     draw_string(left, top - 10, "Aviation Measurements", .9, .9, .2)
     draw_string(left, top - 23, "AirSp.", .9, .9, .9)
     draw_string(left, top - 38, "GndSp.", .9, .9, .9)
@@ -448,84 +446,94 @@ function draw_av_measurements(left, top)
                 1, 0, 0, 0, .425,
                 "OnGrnd", 1, 1, 0, batteryOn)
     end
-
-    --Parking brake info
-    draw_string(left, top - 53, "Parking Brake", .9, .9, .9)
-
-    if parkBrake == 1 then
-        draw_fill_rect_text_center(left + 77, top - 43, 35, 14, .6, .6, .6, .5,
-                1, 1, 0, 0, .6,
-                "ON", 1, 1, 0, true)
-    elseif parkBrake == 0 then
-        draw_fill_rect_text_center(left + 77, top - 43, 35, 14, .6, .6, .6, .5,
-                1, 0, .8, 0, .75,
-                "OFF", 0, 0, 0, true)
-    else
-        draw_fill_rect_text_center(left + 77, top - 43, 35, 14, .6, .6, .6, .5,
-                1, 0, 0, .725, .5,
-                string.format('%02.0f%%', parkBrake * 100), 1, 1, 0, true)
-    end
-
-    ---Flaps
-    draw_string(left + 122, top - 53, "Flaps", .9, .9, .9)
-
-    --display data only if the battery is on
-    if flapsRatio == 0 then
-        draw_fill_rect_text_center(left + 157, top - 43, 35, 14, .6, .6, .6, .5,
-                1, 0, 0, 0, .425,
-                string.format('%02.0f%%', flapsRatio), 0, 1, 0, batteryOn)
-    else
-        draw_fill_rect_text_center(left + 157, top - 43, 35, 14, .6, .6, .6, .5,
-                1, 0, 0, .725, .5,
-                string.format('%02.0f%%', flapsRatio), 1, 1, 0, batteryOn)
-    end
 end
 
-function draw_aircraft(left, top)
+function draw_aircraft(boxLeft, boxTop)
+    draw_fill_rect(boxLeft, boxTop, boxWidth, boxHeight, .9, .9, .9, .325,
+            1, .1, .1, .1, .425)
+
+    left = boxLeft + 10
+    top = boxTop - 5
     --Aircraft information
     draw_string(left, top - 10, "AIRCRAFT", .9, .9, .2)
-    draw_fill_rect_text_center(left + 59, top, 58, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_center(left + 59, top, 67, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             acftName, 1, 1, 0, true)
-    draw_fill_rect_text_center(left + 59 + 57, top, 58, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_center(left + 59 + 66, top, 67, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             tailNum, 1, 1, 0, true)
 
     ----Switches
-    draw_fill_rect(left, top - 16, 174, 43, .6, .6, .6, .5, 1, 0, 0, 0, .425)
+    draw_fill_rect(left, top - 16, 192, 43, .6, .6, .6, .5, 1, 0, 0, 0, .425)
     draw_switch(batteryOn and taxiLight ~= 0, "Taxi LT", left + 3, top - 26)
-    draw_switch(batteryOn and landingLight ~= 0, "Land LT", left + 63, top - 26)
-    draw_switch(batteryOn and navLight ~= 0, "Nav LT", left + 119, top - 26)
+    draw_switch(batteryOn and landingLight ~= 0, "Land LT", left + 72, top - 26)
+    draw_switch(batteryOn and navLight ~= 0, "Nav LT", left + 138, top - 26)
     draw_switch(batteryOn and strobeLight ~= 0, "Strobe", left + 3, top - 40)
-    draw_switch(batteryOn and beaconLight ~= 0, "Beacon", left + 63, top - 40)
+    draw_switch(batteryOn and beaconLight ~= 0, "Beacon", left + 72, top - 40)
     draw_switch(batteryOn and fuelPump ~= 0, "Fuel P.", left + 3, top - 54)
-    draw_switch(batteryOn and pitoHeat ~= 0, "Pitot Ht", left + 63, top - 54)
+    draw_switch(batteryOn and pitoHeat ~= 0, "Pitot Ht", left + 72, top - 54)
 
     --Display electrical and engine info
     draw_string(left, top - 70, "Main Battery", .9, .9, .9)
     draw_string(left, top - 87, "Oil Pressure", .9, .9, .9)
     draw_string(left, top - 103, "Vacuum Press", .9, .9, .9)
     if batteryOn and batteryAmps <= -0.0 then
-        draw_fill_rect_text_center(left + 81, top - 61, 47, 14, .6, .6, .6, .5,
+        draw_fill_rect_text_center(left + 77, top - 61, 58, 14, .6, .6, .6, .5,
                 1, 1, 0, 0, .8,
                 string.format('%.1fA', batteryAmps), 1, 1, 0, batteryOn)
     else
-        draw_fill_rect_text_center(left + 81, top - 61, 47, 14, .6, .6, .6, .5,
+        draw_fill_rect_text_center(left + 77, top - 61, 58, 14, .6, .6, .6, .5,
                 1, 0, 0, 0, .425,
                 string.format('%.1fA', batteryAmps), 0, 1, 0, batteryOn)
     end
-    draw_fill_rect_text_center(left + 127, top - 61, 47, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_center(left + 134, top - 61, 58, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%.1fV', batteryVolts), 0, 1, 0, batteryOn)
-    draw_fill_rect_text_center(left + 81, top - 77, 47, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_center(left + 77, top - 77, 58, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%.2f', oilPressure), 0, 1, 0, batteryOn)
-    draw_fill_rect_text_center(left + 81, top - 93, 47, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_center(left + 77, top - 93, 58, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%02.2f', vacuumRatio), 0, 1, 0, batteryOn)
+
+    --Parking brake info
+    draw_string(left, top - 119, "Parking Brake", .9, .9, .9)
+
+    if parkBrake == 1 then
+        draw_fill_rect_text_center(left + 77, top - 109, 35, 14, .6, .6, .6, .5,
+                1, 1, 0, 0, .6,
+                "ON", 1, 1, 0, true)
+    elseif parkBrake == 0 then
+        draw_fill_rect_text_center(left + 77, top - 109, 35, 14, .6, .6, .6, .5,
+                1, 0, .8, 0, .75,
+                "OFF", 0, 0, 0, true)
+    else
+        draw_fill_rect_text_center(left + 77, top - 109, 35, 14, .6, .6, .6, .5,
+                1, 0, 0, .725, .5,
+                string.format('%02.0f%%', parkBrake * 100), 1, 1, 0, true)
+    end
+
+    ---Flaps
+    draw_string(left + 122, top - 119, "Flaps", .9, .9, .9)
+
+    --display data only if the battery is on
+    if flapsRatio == 0 then
+        draw_fill_rect_text_center(left + 157, top - 109, 35, 14, .6, .6, .6, .5,
+                1, 0, 0, 0, .425,
+                string.format('%02.0f%%', flapsRatio), 0, 1, 0, batteryOn)
+    else
+        draw_fill_rect_text_center(left + 157, top - 109, 35, 14, .6, .6, .6, .5,
+                1, 0, 0, .725, .5,
+                string.format('%02.0f%%', flapsRatio), 1, 1, 0, batteryOn)
+    end
 end
 
-function draw_weather(left, top)
+function draw_weather(boxLeft, boxTop)
+    draw_fill_rect(boxLeft, boxTop, boxWidth, boxHeight, .9, .9, .9, .325,
+            1, .1, .1, .1, .425)
+
+    left = boxLeft + 10
+    top = boxTop - 5
     --Set cloud types for display
     --Cloud Types: Clear = 0, High Cirrus = 1, Scattered = 2, Broken = 3, Overcast = 4, Stratus = 5
     local cloudType_tbl = {
@@ -599,27 +607,32 @@ function draw_weather(left, top)
             clType0, 0, 1, 0, batteryOn)
 end
 
-function draw_simulator(left, top)
+function draw_simulator_inline(left, top)
     fps = 1 / fpsRate
     draw_string(left, top - 10, "Simulator Data", .9, .9, .2)
-    draw_string(left, top - 23, "FPS", .9, .9, .9)
-    draw_string(left + 95, top - 23, "GPU", .9, .9, .9)
+    draw_string(left, top - 23, "FPS/GPU", .9, .9, .9)
+    -- draw_string(left + 95, top - 23, "GPU", .9, .9, .9)
 
     if fps <= 18 then
-        draw_fill_rect_text_center(left + 33, top - 13, 29, 14, .6, .6, .6, .5,
+        draw_fill_rect_text_center(left + 49, top - 13, 72, 14, .6, .6, .6, .5,
                 1, 1, 0, 0, .5,
                 string.format('%03.0f', fps), 1, 1, 0, true)
     else
-        draw_fill_rect_text_center(left + 33, top - 13, 29, 14, .6, .6, .6, .5,
+        draw_fill_rect_text_center(left + 49, top - 13, 72, 14, .6, .6, .6, .5,
                 1, 0, 0, 0, .425,
                 string.format('%03.0f', fps), 0, 1, 0, true)
     end
-    draw_fill_rect_text_center(left + 131, top - 13, 43, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_center(left + 120, top - 13, 72, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%.3f', gpuTime), 0, 1, 0, true)
 end
 
-function draw_engine(left, top)
+function draw_engine(boxLeft, boxTop)
+    draw_fill_rect(boxLeft, boxTop, boxWidth, boxHeight, .9, .9, .9, .325,
+            1, .1, .1, .1, .425)
+
+    left = boxLeft + 10
+    top = boxTop - 5
     -- egt Temperature
     if tempUnit == "F" then
         egtValue = (egtC * 9 / 5) + 32
@@ -674,9 +687,17 @@ function draw_engine(left, top)
     draw_fill_rect_text_center(left + 118, top - 58, 74, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%.1f %s', fuelAvail, fuelUnit), 0, 1, 0, batteryOn)
+
+    -- inline draw av measurements
+    draw_av_measurements_inline(left, top - 75)
 end
 
-function draw_radio()
+function draw_radio(boxLeft, boxTop)
+    draw_fill_rect(boxLeft, boxTop, boxWidth, boxHeight, .9, .9, .9, .325,
+            1, .1, .1, .1, .425)
+
+    left = boxLeft + 10
+    top = boxTop - 5
     --Radios (data provided by require "radio" module)
     com1 = com1_freq_hz  / 1000
     com2 = com2_freq_hz  / 1000
@@ -700,83 +721,61 @@ function draw_radio()
         [7] = "ta/ra",
     }
     xpMode = xpdrMode_tbl[xpdrMode]
-    --Radios
-    graphics.set_color(.6, .6, .6, .5)
-    --com1/com2
-    graphics.draw_rectangle(504, 202, 599, 230)
-    --nav1/nav2
-    graphics.draw_rectangle(504, 172, 599, 200)
-    --ADF
-    graphics.draw_rectangle(504, 156, 599, 170)
-    --Xpdr
-    graphics.draw_rectangle(504, 138, 599, 153)
-
-    graphics.set_color(0, 0, 0, .425)
-    --com1
-    graphics.draw_rectangle(505, 216, 552, 229)
-    graphics.draw_rectangle(553, 216, 598, 229)
-    --com2
-    graphics.draw_rectangle(505, 203, 552, 215)
-    graphics.draw_rectangle(553, 203, 598, 215)
-    --nav1
-    graphics.draw_rectangle(505, 186, 552, 199)
-    graphics.draw_rectangle(553, 186, 598, 199)
-    --nav2
-    graphics.draw_rectangle(505, 173, 552, 185)
-    graphics.draw_rectangle(553, 173, 598, 185)
-    --ADF
-    graphics.draw_rectangle(505, 157, 552, 169)
-    graphics.draw_rectangle(553, 157, 598, 169)
-    --Xpdr
-    graphics.draw_rectangle(505, 139, 552, 152)
-    graphics.draw_rectangle(553, 139, 598, 152)
 
     --radio stack labels
-    draw_string(467, 247, "Radios", .9, .9, .1)
-    draw_string(507, 234, "Active", .9, .9, .9)
-    draw_string(557, 234, "Stdby", .7, .7, .7)
-    draw_string(467, 220, "COM1", .9, .9, .9)
-    draw_string(467, 206, "COM2", .9, .9, .9)
-    draw_string(467, 190, "NAV1", .9, .9, .9)
-    draw_string(467, 176, "NAV2", .9, .9, .9)
-    draw_string(467, 160, "ADF1", .9, .9, .9)
-    draw_string(467, 143, "XPDR", .9, .9, .9)
+    draw_string(left + 70, top - 11, "Active", .9, .9, .9)
+    draw_string(left + 141, top - 11, "Stdby", .8, .8, .8)
 
-    --display radio data only if the battery is on
-    if batteryOn then
-        if avBusOn == 1 then
-            --display data only if the avionics bus is on
-            draw_string(507, 220, string.format('%.3f', com1), .1, 1, .1)
-            draw_string(557, 220, string.format('%.3f', com1S), 0, .7, 0)
-            draw_string(507, 190, string.format('%.2f', nav1), .1, 1, .1)
-            draw_string(557, 190, string.format('%.2f', nav1S), 0, .7, 0)
-            if xpMode ~= "OFF" then
-                draw_string(507, 142, xpdr, .1, 1, .1)
-            end
-            draw_string(557, 142, xpMode, .1, 7, .1)
-            --if crossTie == 1 then
-            --display data only if the cross tie to bus 2 is on
-            draw_string(507, 206, string.format('%.3f', com2), .1, 1, .1)
-            draw_string(557, 206, string.format('%.3f', com2S), 0, .7, 0)
-            draw_string(507, 176, string.format('%.2f', nav2), .1, 1, .1)
-            draw_string(557, 176, string.format('%.2f', nav2S), 0, .7, 0)
-            draw_string(507, 160, adf1, .1, 1, .1)
-            draw_string(557, 160, adf1S, 0, .7, 0)
-            -- end
-        end
-    end
+    --Radios
+    draw_string(left, top - 10, "Radios", .9, .9, .2)
+    draw_string(left, top - 23, "COM1", .9, .9, .9)
+    draw_string(left, top - 38, "COM2", .9, .9, .9)
+    draw_string(left, top - 55, "NAV1", .9, .9, .9)
+    draw_string(left, top - 70, "NAV2", .9, .9, .9)
+    draw_string(left, top - 87, "ADF1", .9, .9, .9)
+    draw_string(left, top - 102, "XPDR", .9, .9, .9)
+    draw_string(left, top - 119, "Nxt GPS Wpt", .9, .9, .9)
 
-    --GPS
-    draw_string(467, 121, "Nxt GPS Wpt", 1, 1, 1)
 
-    graphics.set_color(.6, .6, .6, .5)
-    graphics.draw_rectangle(542, 116, 599, 130)
-    graphics.set_color(0, 0, 0, .425)
-    graphics.draw_rectangle(543, 117, 598, 129)
-
-    if batteryOn and avBusOn == 1 then
-        draw_string(545, 120, gpsNavID0, 0, 1, 0)
-    end
+    draw_fill_rect_text_center(left + 49, top - 13, 72, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.3f', com1), 0, 1, 0, batteryOn and avBusOn == 1)
+    draw_fill_rect_text_center(left + 120, top - 13, 72, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.3f', com1S), 0, .7, 0, batteryOn and avBusOn == 1)
+    draw_fill_rect_text_center(left + 49, top - 28, 72, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.3f', com2), 0, 1, 0, batteryOn and avBusOn == 1)
+    draw_fill_rect_text_center(left + 120, top - 28, 72, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.3f', com2S), 0, .7, 0, batteryOn and avBusOn == 1)
+    draw_fill_rect_text_center(left + 49, top - 45, 72, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.2f', nav1), 0, 1, 0, batteryOn and avBusOn == 1)
+    draw_fill_rect_text_center(left + 120, top - 45, 72, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.2f', nav1S), 0, .7, 0, batteryOn and avBusOn == 1)
+    draw_fill_rect_text_center(left + 49, top - 60, 72, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.2f', nav2), 0, 1, 0, batteryOn and avBusOn == 1)
+    draw_fill_rect_text_center(left + 120, top - 60, 72, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            string.format('%.2f', nav2S), 0, .7, 0, batteryOn and avBusOn == 1)
+    draw_fill_rect_text_center(left + 49, top - 77, 72, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            adf1, 0, 1, 0, batteryOn and avBusOn == 1)
+    draw_fill_rect_text_center(left + 120, top - 77, 72, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            adf1S, 0, .7, 0, batteryOn and avBusOn == 1)
+    draw_fill_rect_text_center(left + 49, top - 92, 72, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            xpdr, 0, 1, 0, batteryOn and avBusOn == 1 and xpMode ~= "OFF")
+    draw_fill_rect_text_center(left + 120, top - 92, 72, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            xpMode, 0, 1, 0, batteryOn and avBusOn == 1)
+    draw_fill_rect_text_center(left + 120, top - 109, 72, 14, .6, .6, .6, .5,
+            1, 0, 0, 0, .425,
+            gpsNavID0, 0, 1, 0, batteryOn and avBusOn == 1)
 end
 
 function draw_autopilot()
@@ -895,64 +894,6 @@ function draw_autopilot()
     end
 end
 
-local leftMargin = 40
-local globalTop = 265
-
-function draw_data_box()
-    bottomMargin = 11
-    local col1Width = 198
-    local col2Width = 213
-    local col3Width = 157
-    border = 1
-
-    local showCol1 = showAircraft or showWeather or showSimulator
-    local showCol2 = showLocation or showEngine
-    local showCol3 = showRadio or showAutopilot
-
-    outerWidth = leftMargin
-    if showCol1 then
-        outerWidth = outerWidth + col1Width + border
-    end
-    if showCol2 then
-        outerWidth = outerWidth + col2Width + border
-    end
-    if showCol3 then
-        outerWidth = outerWidth + col3Width + border
-    end
-
-    ----Backgrounds
-    colBegin = leftMargin
-    if showCol1 then
-        draw_fill_rect(colBegin, globalTop, col1Width + border + border, globalTop - 11, .9, .9, .9, .325,
-                1, .1, .1, .1, .425)
-        colBegin = colBegin + col1Width + border
-    end
-    if showCol2 then
-        draw_fill_rect(colBegin, globalTop, col2Width + border + border, globalTop - 11, .9, .9, .9, .325,
-                1, .1, .1, .1, .425)
-        col2Start = colBegin
-        colBegin = colBegin + col2Width + border
-    end
-    if showCol3 then
-        draw_fill_rect(colBegin, globalTop, col3Width + border + border, globalTop - 11, .9, .9, .9, .325,
-                1, .1, .1, .1, .425)
-        col3Start = colBegin
-    end
-
-end
-
-local function power_warn_box(left, top)
-    draw_fill_rect_text_center(left, top, 200, 35, .6, .6, .6, .5,
-            1, .8, .8, .2, .6,
-            "NO POWER! - Turn Battery On", 1, 0, 0, true)
-end
-
-local function pause_warn_box(left, top)
-    draw_fill_rect_text_center(left, top, 200, 35, .6, .6, .6, .5,
-            1, .8, .8, .2, .6,
-            "** SIMULATOR PAUSED **", 1, 0, 0, true)
-end
-
 function mainProg()
     if XFDVisActive then
         batteryOn = mainBatteryOn ~= 0
@@ -961,13 +902,17 @@ function mainProg()
             load_params()
             reloadParams = false
         end
-        draw_data_box()
         show_flight_data()
 
+        -- simulator and battery power status hint
         if paused ~= 0 then
-            pause_warn_box(leftMargin, 300)
+            draw_fill_rect_text_center(leftMargin + 10, boxHeight + 16, 192, 16, .6, .6, .6, .5,
+                    1, .7, .7, .1, .6,
+                    "** SIMULATOR PAUSED **", 1, 0, 0, true)
         elseif (not batteryOn) then
-            power_warn_box(leftMargin, 300)
+            draw_fill_rect_text_center(leftMargin + 10, boxHeight + 16, 192, 16, .6, .6, .6, .5,
+                    1, .7, .7, .1, .6,
+                    "NO POWER! - Turn Battery On", 1, 0, 0, true)
             reloadParams = true
         end
     end
@@ -977,7 +922,9 @@ function mouse_click()
     -- close button clicked
     xClick = MOUSE_X
     yClick = MOUSE_Y
-    if (xClick >= 41 and xClick <= 53) and (yClick >= 252 and yClick <= 265) then
+    x = leftMargin
+    y = bottom + boxHeight
+    if (xClick >= x and xClick <= x + 10) and (yClick >= y - 10 and yClick <= y) then
         XFDVisActive = false
     end
 end
