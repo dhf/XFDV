@@ -1,13 +1,11 @@
 require("graphics")
 require("HUD")
 require("jjjLib1")
-local pluginName = "XFDV"
 
-local leftMargin = 0
-local bottom = 0
-local border = 1
+local pluginName = "XFDV"
 local boxWidth = 215
 local boxHeight = 133
+local borderWidth = 1
 
 if jjjLib1.version == nil or jjjLib1.version() < 1.7 then
     do_every_draw('draw_string(20, SCREEN_HIGHT - 104, "Plugin ' .. pluginName .. ': Requires library \'3jLib1\' version 1.7 or higher! Please search for \'3jLib1\' on x-plane.org, download and install current version of library.")')
@@ -21,49 +19,52 @@ if XPLANE_VERSION < 12000 then
     return
 end
 
+jjjLib1.addParam(pluginId, "leftMargin", { ["save"] = "global", ["autosave"] = true, ["dflt"] = 0 }, "")
+jjjLib1.addParam(pluginId, "bottomMargin", { ["save"] = "global", ["autosave"] = true, ["dflt"] = 0 }, "")
+jjjLib1.addParam(pluginId, "liquidUnit", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "L" }, "")
 jjjLib1.addParam(pluginId, "liquidUnit", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "L" }, "")
 jjjLib1.addParam(pluginId, "tempUnit", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "C" }, "")
 jjjLib1.addParam(pluginId, "showAircraft", { ["save"] = "global", ["autosave"] = true, ["dflt"] = true }, "")
-jjjLib1.addParam(pluginId, "showWeather", { ["save"] = "global", ["autosave"] = true, ["dflt"] = true }, "")
-jjjLib1.addParam(pluginId, "showSimulator", { ["save"] = "global", ["autosave"] = true, ["dflt"] = true }, "")
-jjjLib1.addParam(pluginId, "showLocation", { ["save"] = "global", ["autosave"] = true, ["dflt"] = true }, "")
 jjjLib1.addParam(pluginId, "showEngine", { ["save"] = "global", ["autosave"] = true, ["dflt"] = true }, "")
+jjjLib1.addParam(pluginId, "showWeather", { ["save"] = "global", ["autosave"] = true, ["dflt"] = true }, "")
+jjjLib1.addParam(pluginId, "showLocation", { ["save"] = "global", ["autosave"] = true, ["dflt"] = true }, "")
 jjjLib1.addParam(pluginId, "showRadio", { ["save"] = "global", ["autosave"] = true, ["dflt"] = true }, "")
 jjjLib1.addParam(pluginId, "showAutopilot", { ["save"] = "global", ["autosave"] = true, ["dflt"] = true }, "")
 
-function XFDV_param(param)
+local function get_param(param)
     return jjjLib1.getParam(pluginId, param)
 end
-function XFDV_setParam(param, value)
+
+local function set_param(param, value)
     jjjLib1.setParam(pluginId, param, value)
 end
-function XFDV_loadParams()
-    local ok = jjjLib1.loadParams(pluginId)
-end
-function XFDV_saveParams()
+
+local function save_params()
     jjjLib1.saveParams(pluginId)
 end
-function XFDV_setParamsDefault()
+
+local function set_params_default()
     jjjLib1.setParamsDefault(pluginId)
 end
 
--- XFDV_saveParams()
-
-function load_params()
+local function load_params()
     -- load XFDV settings
     jjjLib1.loadParams(pluginId, "global")
 
+    -- Position
+    leftMargin = get_param("leftMargin")
+    bottomMargin = get_param("bottomMargin")
+    logMsg(leftMargin)
     -- units
-    liquidUnit = XFDV_param("liquidUnit")
-    tempUnit = XFDV_param("tempUnit")
+    liquidUnit = get_param("liquidUnit")
+    tempUnit = get_param("tempUnit")
     -- control visibility of informations
-    showAircraft = XFDV_param("showAircraft")
-    showWeather = XFDV_param("showWeather")
-    showSimulator = XFDV_param("showSimulator")
-    showLocation = XFDV_param("showLocation")
-    showEngine = XFDV_param("showEngine")
-    showRadio = XFDV_param("showRadio")
-    showAutopilot = XFDV_param("showAutopilot")
+    showAircraft = get_param("showAircraft")
+    showEngine = get_param("showEngine")
+    showWeather = get_param("showWeather")
+    showLocation = get_param("showLocation")
+    showRadio = get_param("showRadio")
+    showAutopilot = get_param("showAutopilot")
 end
 
 function getDataRefs()
@@ -232,29 +233,29 @@ function show_flight_data()
         calc_weather_data()
     end
     if showAircraft then
-        draw_aircraft(leftMargin + (colMultiplicator * (boxWidth - border)), bottom + boxHeight)
+        draw_aircraft(leftMargin + (colMultiplicator * (boxWidth - borderWidth)), bottomMargin + boxHeight)
         colMultiplicator = colMultiplicator + 1
     end
     if showEngine then
-        draw_engine(leftMargin + (colMultiplicator * (boxWidth - border)), bottom + boxHeight)
+        draw_engine(leftMargin + (colMultiplicator * (boxWidth - borderWidth)), bottomMargin + boxHeight)
         colMultiplicator = colMultiplicator + 1
     end
     if showWeather then
-        draw_weather(leftMargin + (colMultiplicator * (boxWidth - border)), bottom + boxHeight)
+        draw_weather(leftMargin + (colMultiplicator * (boxWidth - borderWidth)), bottomMargin + boxHeight)
         colMultiplicator = colMultiplicator + 1
     end
     if showLocation then
-        draw_location(leftMargin + (colMultiplicator * (boxWidth - border)), bottom + boxHeight)
+        draw_location(leftMargin + (colMultiplicator * (boxWidth - borderWidth)), bottomMargin + boxHeight)
         colMultiplicator = colMultiplicator + 1
     end
     if showRadio then
-        draw_radio(leftMargin + (colMultiplicator * (boxWidth - border)), bottom + boxHeight)
+        draw_radio(leftMargin + (colMultiplicator * (boxWidth - borderWidth)), bottomMargin + boxHeight)
         colMultiplicator = colMultiplicator + 1
     end
     if showAutopilot then
         -- draw_autopilot()
     end
-    draw_close_button(leftMargin, bottom + boxHeight)
+    draw_close_button(leftMargin, bottomMargin + boxHeight)
 end
 
 function calc_fuel_data()
@@ -616,11 +617,11 @@ function draw_simulator_inline(left, top)
     if fps <= 18 then
         draw_fill_rect_text_center(left + 49, top - 13, 72, 14, .6, .6, .6, .5,
                 1, 1, 0, 0, .5,
-                string.format('%03.0f', fps), 1, 1, 0, true)
+                string.format('%3.0f', fps), 1, 1, 0, true)
     else
         draw_fill_rect_text_center(left + 49, top - 13, 72, 14, .6, .6, .6, .5,
                 1, 0, 0, 0, .425,
-                string.format('%03.0f', fps), 0, 1, 0, true)
+                string.format('%3.0f', fps), 0, 1, 0, true)
     end
     draw_fill_rect_text_center(left + 120, top - 13, 72, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
@@ -906,11 +907,11 @@ function mainProg()
 
         -- simulator and battery power status hint
         if paused ~= 0 then
-            draw_fill_rect_text_center(leftMargin + 10, boxHeight + 16, 192, 16, .6, .6, .6, .5,
+            draw_fill_rect_text_center(leftMargin + 10, boxHeight + bottomMargin + 16, 192, 16, .6, .6, .6, .5,
                     1, .7, .7, .1, .6,
                     "** SIMULATOR PAUSED **", 1, 0, 0, true)
         elseif (not batteryOn) then
-            draw_fill_rect_text_center(leftMargin + 10, boxHeight + 16, 192, 16, .6, .6, .6, .5,
+            draw_fill_rect_text_center(leftMargin + 10, boxHeight + bottomMargin + 16, 192, 16, .6, .6, .6, .5,
                     1, .7, .7, .1, .6,
                     "NO POWER! - Turn Battery On", 1, 0, 0, true)
             reloadParams = true
@@ -923,7 +924,7 @@ function mouse_click()
     xClick = MOUSE_X
     yClick = MOUSE_Y
     x = leftMargin
-    y = bottom + boxHeight
+    y = bottomMargin + boxHeight
     if (xClick >= x and xClick <= x + 10) and (yClick >= y - 10 and yClick <= y) then
         XFDVisActive = false
     end
