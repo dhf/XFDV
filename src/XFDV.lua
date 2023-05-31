@@ -11,7 +11,6 @@ local horizontalMargin = 5
 local verticalMargin = 5
 local menuBarHeight = 28
 
-
 if jjjLib1.version == nil or jjjLib1.version() < 1.7 then
     do_every_draw('draw_string(20, SCREEN_HIGHT - 104, "Plugin ' .. pluginName .. ': Requires library \'3jLib1\' version 1.7 or higher! Please search for \'3jLib1\' on x-plane.org, download and install current version of library.")')
     return
@@ -1059,7 +1058,6 @@ function draw_config_panel()
 
     jjjLib1.addPanelBR(pluginId, panelId, 2)
     jjjLib1.addPanelHR(pluginId, panelId)
-
 
     jjjLib1.addPanelTextLine(pluginId, panelId, "Switch visibility of elements:")
     jjjLib1.addPanelBR(pluginId, panelId, 1)
