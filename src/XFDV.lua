@@ -6,6 +6,11 @@ local pluginName = "XFDV"
 local boxWidth = 215
 local boxHeight = 133
 local borderWidth = 1
+local showConfigPanel = false
+local horizontalMargin = 5
+local verticalMargin = 5
+local menuBarHeight = 28
+
 
 if jjjLib1.version == nil or jjjLib1.version() < 1.7 then
     do_every_draw('draw_string(20, SCREEN_HIGHT - 104, "Plugin ' .. pluginName .. ': Requires library \'3jLib1\' version 1.7 or higher! Please search for \'3jLib1\' on x-plane.org, download and install current version of library.")')
@@ -13,15 +18,15 @@ if jjjLib1.version == nil or jjjLib1.version() < 1.7 then
 end
 
 local pluginId = jjjLib1.getPlId(pluginName)
+local panelId = jjjLib1.createPanel(pluginId, "", 320, 'draw_config_panel()', "grey")
 
 if XPLANE_VERSION < 12000 then
     jjjLib1.warning(pluginId, pluginName .. ': This plugin is for X-Plane 12 only!')
     return
 end
 
-jjjLib1.addParam(pluginId, "leftMargin", { ["save"] = "global", ["autosave"] = true, ["dflt"] = 0 }, "")
-jjjLib1.addParam(pluginId, "bottomMargin", { ["save"] = "global", ["autosave"] = true, ["dflt"] = 0 }, "")
-jjjLib1.addParam(pluginId, "liquidUnit", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "L" }, "")
+jjjLib1.addParam(pluginId, "horizontalAlignment", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "L" }, "")
+jjjLib1.addParam(pluginId, "verticalAlignment", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "B" }, "")
 jjjLib1.addParam(pluginId, "liquidUnit", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "L" }, "")
 jjjLib1.addParam(pluginId, "tempUnit", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "C" }, "")
 jjjLib1.addParam(pluginId, "showAircraft", { ["save"] = "global", ["autosave"] = true, ["dflt"] = true }, "")
@@ -39,22 +44,21 @@ local function set_param(param, value)
     jjjLib1.setParam(pluginId, param, value)
 end
 
-local function save_params()
+function xfdv_save_params()
     jjjLib1.saveParams(pluginId)
 end
 
-local function set_params_default()
+function xfdv_set_params_default()
     jjjLib1.setParamsDefault(pluginId)
 end
 
-local function load_params()
+function xfdv_load_params()
     -- load XFDV settings
     jjjLib1.loadParams(pluginId, "global")
 
     -- Position
-    leftMargin = get_param("leftMargin")
-    bottomMargin = get_param("bottomMargin")
-    logMsg(leftMargin)
+    horizontalAlignment = get_param("horizontalAlignment")
+    verticalAlignment = get_param("verticalAlignment")
     -- units
     liquidUnit = get_param("liquidUnit")
     tempUnit = get_param("tempUnit")
@@ -226,36 +230,91 @@ end
 
 function show_flight_data()
     local colMultiplicator = 0
+    local x, y = 0, 0
+
+    local function calcXY()
+        if horizontalAlignment == "L" then
+            lx = horizontalMargin + (colMultiplicator * (boxWidth - borderWidth))
+        else
+            lx = SCREEN_WIDTH - horizontalMargin - ((colMultiplicator + 1) * (boxWidth - borderWidth))
+        end
+
+        if verticalAlignment == "T" then
+            ly = SCREEN_HEIGHT - menuBarHeight - verticalMargin
+        else
+            ly = verticalMargin + boxHeight
+        end
+        return lx, ly
+    end
+
     if showAircraft or showEngine then
         calc_fuel_data()
     end
     if showAircraft or showWeather or showLocation then
         calc_weather_data()
     end
-    if showAircraft then
-        draw_aircraft(leftMargin + (colMultiplicator * (boxWidth - borderWidth)), bottomMargin + boxHeight)
-        colMultiplicator = colMultiplicator + 1
+
+    if horizontalAlignment == "L" then
+        if showAircraft then
+            x, y = calcXY()
+            draw_aircraft(x, y)
+            colMultiplicator = colMultiplicator + 1
+        end
+        if showEngine then
+            x, y = calcXY()
+            draw_engine(x, y)
+            colMultiplicator = colMultiplicator + 1
+        end
+        if showWeather then
+            x, y = calcXY()
+            draw_weather(x, y)
+            colMultiplicator = colMultiplicator + 1
+        end
+        if showLocation then
+            x, y = calcXY()
+            draw_location(x, y)
+            colMultiplicator = colMultiplicator + 1
+        end
+        if showRadio then
+            x, y = calcXY()
+            draw_radio(x, y)
+            colMultiplicator = colMultiplicator + 1
+        end
+        if showAutopilot then
+            -- draw_autopilot()
+        end
+        draw_close_button(horizontalMargin, y)
+    else
+        if showAutopilot then
+            -- draw_autopilot()
+        end
+        if showRadio then
+            x, y = calcXY()
+            draw_radio(x, y)
+            colMultiplicator = colMultiplicator + 1
+        end
+        if showLocation then
+            x, y = calcXY()
+            draw_location(x, y)
+            colMultiplicator = colMultiplicator + 1
+        end
+        if showWeather then
+            x, y = calcXY()
+            draw_weather(x, y)
+            colMultiplicator = colMultiplicator + 1
+        end
+        if showEngine then
+            x, y = calcXY()
+            draw_engine(x, y)
+            colMultiplicator = colMultiplicator + 1
+        end
+        if showAircraft then
+            x, y = calcXY()
+            draw_aircraft(x, y)
+            colMultiplicator = colMultiplicator + 1
+        end
+        draw_close_button(SCREEN_WIDTH - horizontalMargin - 10, y)
     end
-    if showEngine then
-        draw_engine(leftMargin + (colMultiplicator * (boxWidth - borderWidth)), bottomMargin + boxHeight)
-        colMultiplicator = colMultiplicator + 1
-    end
-    if showWeather then
-        draw_weather(leftMargin + (colMultiplicator * (boxWidth - borderWidth)), bottomMargin + boxHeight)
-        colMultiplicator = colMultiplicator + 1
-    end
-    if showLocation then
-        draw_location(leftMargin + (colMultiplicator * (boxWidth - borderWidth)), bottomMargin + boxHeight)
-        colMultiplicator = colMultiplicator + 1
-    end
-    if showRadio then
-        draw_radio(leftMargin + (colMultiplicator * (boxWidth - borderWidth)), bottomMargin + boxHeight)
-        colMultiplicator = colMultiplicator + 1
-    end
-    if showAutopilot then
-        -- draw_autopilot()
-    end
-    draw_close_button(leftMargin, bottomMargin + boxHeight)
 end
 
 function calc_fuel_data()
@@ -378,7 +437,7 @@ function draw_av_measurements_inline(left, top)
     draw_string(left + 103, top - 23, "Bear.", .9, .9, .9)
     draw_string(left + 103, top - 38, "Alt.", .9, .9, .9)
 
-    ---Airspeed
+    --Airspeed
     if airSpeed >= overVne then
         draw_fill_rect_text_center(left + 49, top - 13, 47, 14, .6, .6, .6, .5,
                 1, 1, 0, 0, .45,
@@ -405,7 +464,7 @@ function draw_av_measurements_inline(left, top)
                 "OnGrnd", 1, 1, 0, batteryOn)
     end
 
-    ---Ground speed
+    --Ground speed
     if round(gndSpeed) > 0 then
         draw_fill_rect_text_center(left + 49, top - 28, 47, 14, .6, .6, .6, .5,
                 1, 0, 0, 0, .425,
@@ -416,7 +475,7 @@ function draw_av_measurements_inline(left, top)
                 "OnGrnd", 1, 1, 0, batteryOn)
     end
 
-    ----Bearing
+    --Bearing
     draw_fill_rect_text_center(left + 134, top - 13, 58, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%05.1fDeg', magBearing), 0, 1, 0, batteryOn)
@@ -464,7 +523,7 @@ function draw_aircraft(boxLeft, boxTop)
             1, 0, 0, 0, .425,
             tailNum, 1, 1, 0, true)
 
-    ----Switches
+    --Switches
     draw_fill_rect(left, top - 16, 192, 43, .6, .6, .6, .5, 1, 0, 0, 0, .425)
     draw_switch(batteryOn and taxiLight ~= 0, "Taxi LT", left + 3, top - 26)
     draw_switch(batteryOn and landingLight ~= 0, "Land LT", left + 72, top - 26)
@@ -514,7 +573,7 @@ function draw_aircraft(boxLeft, boxTop)
                 string.format('%02.0f%%', parkBrake * 100), 1, 1, 0, true)
     end
 
-    ---Flaps
+    --Flaps
     draw_string(left + 122, top - 119, "Flaps", .9, .9, .9)
 
     --display data only if the battery is on
@@ -700,11 +759,11 @@ function draw_radio(boxLeft, boxTop)
     left = boxLeft + 10
     top = boxTop - 5
     --Radios (data provided by require "radio" module)
-    com1 = com1_freq_hz  / 1000
-    com2 = com2_freq_hz  / 1000
+    com1 = com1_freq_hz / 1000
+    com2 = com2_freq_hz / 1000
     nav1 = nav1_freq_hz / 100
     nav2 = nav2_freq_hz / 100
-    com1S = com1_stby_freq_hz  / 1000
+    com1S = com1_stby_freq_hz / 1000
     com2S = com2_stby_freq_hz / 1000
     nav1S = nav1_stby_freq_hz / 100
     nav2S = nav2_stby_freq_hz / 100
@@ -736,7 +795,6 @@ function draw_radio(boxLeft, boxTop)
     draw_string(left, top - 87, "ADF1", .9, .9, .9)
     draw_string(left, top - 102, "XPDR", .9, .9, .9)
     draw_string(left, top - 119, "Nxt GPS Wpt", .9, .9, .9)
-
 
     draw_fill_rect_text_center(left + 49, top - 13, 72, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
@@ -895,25 +953,177 @@ function draw_autopilot()
     end
 end
 
+local function draw_warning_msg(value, showConfigButton)
+    local x = (SCREEN_WIDTH / 2) - 100
+    local xConf = (SCREEN_WIDTH / 2) - 50
+    local y = verticalMargin + 16
+    local yConf = verticalMargin + 16 + 16
+    if verticalAlignment == "T" then
+        y = SCREEN_HEIGHT - menuBarHeight - verticalMargin
+        yConf = SCREEN_HEIGHT - menuBarHeight - verticalMargin - 16
+    end
+    if showConfigButton then
+        draw_fill_rect_text_center(xConf, yConf, 100, 16, .6, .6, .6, .5,
+                1, 1, 0, 0, .5,
+                "Configure XFDV", 1, 1, 0, true)
+    end
+
+    draw_fill_rect_text_center(x, y, 200, 16, .6, .6, .6, .5,
+            1, .7, .7, .1, .6,
+            "XFDV: " .. value, 1, 0, 0, true)
+end
+
+local function draw_pause_msg()
+    draw_warning_msg("** SIMULATOR PAUSED **", true)
+end
+
+local function draw_battery_msg()
+    draw_warning_msg("NO POWER! - Turn Battery On", false)
+end
+
+function xfdv_set_horizontal_alignment(value)
+    horizontalAlignment = value
+    set_param("horizontalAlignment", value)
+end
+
+function xfdv_set_vertical_alignment(value)
+    verticalAlignment = value
+    set_param("verticalAlignment", value)
+end
+
+function xfdv_set_aircraft_visibility(value)
+    showAircraft = value
+    set_param("showAircraft", value)
+end
+
+function xfdv_set_engine_visibility(value)
+    showEngine = value
+    set_param("showEngine", value)
+end
+
+function xfdv_set_weather_visibility(value)
+    showWeather = value
+    set_param("showWeather", value)
+end
+
+function xfdv_set_location_visibility(value)
+    showLocation = value
+    set_param("showLocation", value)
+end
+
+function xfdv_set_radio_visibility(value)
+    showRadio = value
+    set_param("showRadio", value)
+end
+
+function xfdv_set_temp_unit(value)
+    tempUnit = value
+    set_param("tempUnit", value)
+end
+
+function xfdv_set_liquid_unit(value)
+    liquidUnit = value
+    set_param("liquidUnit", value)
+end
+
+function draw_config_panel()
+    jjjLib1.clearPanel(pluginId, panelId)
+    jjjLib1.setPanelPos(pluginId, panelId, 10)
+    jjjLib1.setPanelName(pluginId, panelId, "CONFIGURATION")
+    jjjLib1.addPanelTextLine(pluginId, panelId, "Panel position:")
+    jjjLib1.addPanelBR(pluginId, panelId, 0.5)
+    jjjLib1.addPanelLabel(pluginId, panelId, "Horizontal alignment")
+    jjjLib1.addPanelButton(pluginId, panelId, "", "s", false, false, "")
+    jjjLib1.addPanelButton(pluginId, panelId, "LEFT", "s", horizontalAlignment == "L", true, 'xfdv_set_horizontal_alignment("L")')
+    jjjLib1.addPanelButton(pluginId, panelId, "RIGHT", "s", horizontalAlignment == "R", true, 'xfdv_set_horizontal_alignment("R")')
+    jjjLib1.addPanelBR(pluginId, panelId, 2.0)
+    jjjLib1.addPanelLabel(pluginId, panelId, "Vertical alignment")
+    jjjLib1.addPanelButton(pluginId, panelId, "", "s", false, false, "")
+    jjjLib1.addPanelButton(pluginId, panelId, "TOP", "s", verticalAlignment == "T", true, 'xfdv_set_vertical_alignment("T")')
+    jjjLib1.addPanelButton(pluginId, panelId, "BOTTOM", "s", verticalAlignment == "B", true, 'xfdv_set_vertical_alignment("B")')
+
+    jjjLib1.addPanelBR(pluginId, panelId, 2)
+    jjjLib1.addPanelHR(pluginId, panelId)
+
+    jjjLib1.addPanelTextLine(pluginId, panelId, "Temp/Liquid unit:")
+    jjjLib1.addPanelBR(pluginId, panelId, 0.5)
+    jjjLib1.addPanelLabel(pluginId, panelId, "Temperature unit")
+    jjjLib1.addPanelButton(pluginId, panelId, "", "s", false, false, "")
+    jjjLib1.addPanelButton(pluginId, panelId, "CELSIUS", "s", tempUnit == "C", true, 'xfdv_set_temp_unit("C")')
+    jjjLib1.addPanelButton(pluginId, panelId, "FAHRENH.", "s", tempUnit == "F", true, 'xfdv_set_temp_unit("F")')
+    jjjLib1.addPanelBR(pluginId, panelId, 2.0)
+    jjjLib1.addPanelLabel(pluginId, panelId, "Liquid unit")
+    jjjLib1.addPanelButton(pluginId, panelId, "", "s", false, false, "")
+    jjjLib1.addPanelButton(pluginId, panelId, "LITER", "s", liquidUnit == "L", true, 'xfdv_set_liquid_unit("L")')
+    jjjLib1.addPanelButton(pluginId, panelId, "GALLON", "s", liquidUnit == "G", true, 'xfdv_set_liquid_unit("G")')
+
+    jjjLib1.addPanelBR(pluginId, panelId, 2)
+    jjjLib1.addPanelHR(pluginId, panelId)
+
+
+    jjjLib1.addPanelTextLine(pluginId, panelId, "Switch visibility of elements:")
+    jjjLib1.addPanelBR(pluginId, panelId, 1)
+    jjjLib1.addPanelLabel(pluginId, panelId, "Aircraft")
+    jjjLib1.addPanelButton(pluginId, panelId, "", "s", false, false, "")
+    jjjLib1.addPanelButton(pluginId, panelId, "SHOW", "s", showAircraft == true, true, 'xfdv_set_aircraft_visibility(true)')
+    jjjLib1.addPanelButton(pluginId, panelId, "HIDE", "s", showAircraft == false, true, 'xfdv_set_aircraft_visibility(false)')
+    jjjLib1.addPanelBR(pluginId, panelId, 2)
+    jjjLib1.addPanelLabel(pluginId, panelId, "Engine")
+    jjjLib1.addPanelButton(pluginId, panelId, "", "s", false, false, "")
+    jjjLib1.addPanelButton(pluginId, panelId, "SHOW", "s", showEngine == true, true, 'xfdv_set_engine_visibility(true)')
+    jjjLib1.addPanelButton(pluginId, panelId, "HIDE", "s", showEngine == false, true, 'xfdv_set_engine_visibility(false)')
+    jjjLib1.addPanelBR(pluginId, panelId, 2)
+    jjjLib1.addPanelLabel(pluginId, panelId, "Weather")
+    jjjLib1.addPanelButton(pluginId, panelId, "", "s", false, false, "")
+    jjjLib1.addPanelButton(pluginId, panelId, "SHOW", "s", showWeather == true, true, 'xfdv_set_weather_visibility(true)')
+    jjjLib1.addPanelButton(pluginId, panelId, "HIDE", "s", showWeather == false, true, 'xfdv_set_weather_visibility(false)')
+    jjjLib1.addPanelBR(pluginId, panelId, 2)
+    jjjLib1.addPanelLabel(pluginId, panelId, "Location")
+    jjjLib1.addPanelButton(pluginId, panelId, "", "s", false, false, "")
+    jjjLib1.addPanelButton(pluginId, panelId, "SHOW", "s", showLocation == true, true, 'xfdv_set_location_visibility(true)')
+    jjjLib1.addPanelButton(pluginId, panelId, "HIDE", "s", showLocation == false, true, 'xfdv_set_location_visibility(false)')
+    jjjLib1.addPanelBR(pluginId, panelId, 2)
+    jjjLib1.addPanelLabel(pluginId, panelId, "Radio")
+    jjjLib1.addPanelButton(pluginId, panelId, "", "s", false, false, "")
+    jjjLib1.addPanelButton(pluginId, panelId, "SHOW", "s", showRadio == true, true, 'xfdv_set_radio_visibility(true)')
+    jjjLib1.addPanelButton(pluginId, panelId, "HIDE", "s", showRadio == false, true, 'xfdv_set_radio_visibility(false)')
+
+    jjjLib1.addPanelBR(pluginId, panelId, 2)
+    jjjLib1.addPanelHR(pluginId, panelId)
+
+    jjjLib1.addPanelButton(pluginId, panelId, "SAVE", "m", false, jjjLib1.isAnyParamUnsaved(pluginId), 'xfdv_save_params(); xfdv_toggle_config_panel()', "green")
+    if jjjLib1.isAnyParamUnsaved(pluginId) then
+        jjjLib1.addPanelButton(pluginId, panelId, "CANCEL", "m", false, true, 'xfdv_load_params(); xfdv_toggle_config_panel()', "grey")
+    else
+        jjjLib1.addPanelButton(pluginId, panelId, "BACK", "m", false, true, 'xfdv_toggle_config_panel()', "grey")
+    end
+    jjjLib1.addPanelButton(pluginId, panelId, "DEFAULT", "m", false, jjjLib1.isAnyParamNotDefault(pluginId), 'xfdv_set_params_default()', "grey")
+end
+
+function xfdv_toggle_config_panel()
+    showConfigPanel = not showConfigPanel
+    if showConfigPanel == false then
+        jjjLib1.closePanel(pluginId, panelId)
+    else
+        jjjLib1.openPanel(pluginId, panelId)
+    end
+end
+
 function mainProg()
     if XFDVisActive then
         batteryOn = mainBatteryOn ~= 0
 
         if batteryOn and reloadParams then
-            load_params()
+            xfdv_load_params()
             reloadParams = false
         end
         show_flight_data()
 
         -- simulator and battery power status hint
         if paused ~= 0 then
-            draw_fill_rect_text_center(leftMargin + 10, boxHeight + bottomMargin + 16, 192, 16, .6, .6, .6, .5,
-                    1, .7, .7, .1, .6,
-                    "** SIMULATOR PAUSED **", 1, 0, 0, true)
+            draw_pause_msg()
         elseif (not batteryOn) then
-            draw_fill_rect_text_center(leftMargin + 10, boxHeight + bottomMargin + 16, 192, 16, .6, .6, .6, .5,
-                    1, .7, .7, .1, .6,
-                    "NO POWER! - Turn Battery On", 1, 0, 0, true)
+            draw_battery_msg()
             reloadParams = true
         end
     end
@@ -923,10 +1133,33 @@ function mouse_click()
     -- close button clicked
     xClick = MOUSE_X
     yClick = MOUSE_Y
-    x = leftMargin
-    y = bottomMargin + boxHeight
-    if (xClick >= x and xClick <= x + 10) and (yClick >= y - 10 and yClick <= y) then
+    xMinConf = (SCREEN_WIDTH / 2) - 48
+    xMaxConf = (SCREEN_WIDTH / 2) + 48
+    if horizontalAlignment == "L" then
+        xMinClose = horizontalMargin
+        xMaxClose = horizontalMargin + 10
+    else
+        xMinClose = SCREEN_WIDTH - horizontalMargin - 10
+        xMaxClose = SCREEN_WIDTH - horizontalMargin
+    end
+    if verticalAlignment == "T" then
+        yMinClose = SCREEN_HEIGHT - menuBarHeight - verticalMargin - 10
+        yMaxClose = SCREEN_HEIGHT - menuBarHeight - verticalMargin
+
+        yMinConf = SCREEN_HEIGHT - menuBarHeight - verticalMargin - 16 - 16
+        yMaxConf = SCREEN_HEIGHT - menuBarHeight - verticalMargin - 16
+    else
+        yMinClose = verticalMargin + boxHeight - 10
+        yMaxClose = verticalMargin + boxHeight
+        yMinConf = verticalMargin + 16
+        yMaxConf = verticalMargin + 16 + 16
+    end
+
+    if (xClick >= xMinClose and xClick <= xMaxClose) and (yClick >= yMinClose and yClick <= yMaxClose) then
         XFDVisActive = false
+    end
+    if XFDVisActive and paused ~= 0 and showConfigPanel == false and (xClick >= xMinConf and xClick <= xMaxConf) and (yClick >= yMinConf and yClick <= yMaxConf) then
+        xfdv_toggle_config_panel()
     end
 end
 
@@ -934,9 +1167,12 @@ XFDVisActive = true
 reloadParams = false
 
 --Main Program
-load_params()
+xfdv_load_params()
 getDataRefs()
+
+draw_config_panel()
+
 do_every_draw("mainProg()")
 do_on_mouse_click("mouse_click()")
 
-add_macro("Show Flight Data Window", "XFDVisActive = true")
+add_macro("Show XFDV Window", "XFDVisActive = true")
