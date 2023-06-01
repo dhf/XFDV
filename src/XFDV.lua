@@ -25,9 +25,9 @@ if XPLANE_VERSION < 12000 then
     return
 end
 
-jjjLib1.addParam(pluginId, "horizontalAlignment", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "L" }, "")
-jjjLib1.addParam(pluginId, "verticalAlignment", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "B" }, "")
-jjjLib1.addParam(pluginId, "distribution", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "H" }, "")
+jjjLib1.addParam(pluginId, "horizontalAlignment", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "R" }, "")
+jjjLib1.addParam(pluginId, "verticalAlignment", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "T" }, "")
+jjjLib1.addParam(pluginId, "distribution", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "V" }, "")
 jjjLib1.addParam(pluginId, "liquidUnit", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "L" }, "")
 jjjLib1.addParam(pluginId, "tempUnit", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "C" }, "")
 jjjLib1.addParam(pluginId, "showAircraft", { ["save"] = "global", ["autosave"] = true, ["dflt"] = true }, "")
