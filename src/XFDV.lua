@@ -10,6 +10,7 @@ local showConfigPanel = false
 local horizontalMargin = 5
 local verticalMargin = 5
 local menuBarHeight = 28
+local rowCount = 1 -- for future use
 
 if jjjLib1.version == nil or jjjLib1.version() < 1.7 then
     do_every_draw('draw_string(20, SCREEN_HIGHT - 104, "Plugin ' .. pluginName .. ': Requires library \'3jLib1\' version 1.7 or higher! Please search for \'3jLib1\' on x-plane.org, download and install current version of library.")')
@@ -26,6 +27,7 @@ end
 
 jjjLib1.addParam(pluginId, "horizontalAlignment", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "L" }, "")
 jjjLib1.addParam(pluginId, "verticalAlignment", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "B" }, "")
+jjjLib1.addParam(pluginId, "distribution", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "H" }, "")
 jjjLib1.addParam(pluginId, "liquidUnit", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "L" }, "")
 jjjLib1.addParam(pluginId, "tempUnit", { ["save"] = "global", ["autosave"] = true, ["dflt"] = "C" }, "")
 jjjLib1.addParam(pluginId, "showAircraft", { ["save"] = "global", ["autosave"] = true, ["dflt"] = true }, "")
@@ -58,6 +60,7 @@ function xfdv_load_params()
     -- Position
     horizontalAlignment = get_param("horizontalAlignment")
     verticalAlignment = get_param("verticalAlignment")
+    distribution = get_param("distribution")
     -- units
     liquidUnit = get_param("liquidUnit")
     tempUnit = get_param("tempUnit")
@@ -227,24 +230,66 @@ local function draw_fill_rect_text_right(left, top, length, height, rBorder, gBo
     end
 end
 
-function show_flight_data()
-    local colMultiplicator = 0
-    local x, y = 0, 0
+local function condIf ( cond , T , F )
+    if cond then return T else return F end
+end
 
-    local function calcXY()
-        if horizontalAlignment == "L" then
-            lx = horizontalMargin + (colMultiplicator * (boxWidth - borderWidth))
-        else
-            lx = SCREEN_WIDTH - horizontalMargin - ((colMultiplicator + 1) * (boxWidth - borderWidth))
-        end
+local function active_box_count()
+    local boxCount = 0
+    boxCount =  boxCount + condIf(showAircraft, 1, 0)
+    boxCount =  boxCount + condIf(showEngine, 1, 0)
+    boxCount =  boxCount + condIf(showWeather, 1, 0)
+    boxCount =  boxCount + condIf(showLocation, 1, 0)
+    boxCount =  boxCount + condIf(showRadio, 1, 0)
+    boxCount =  boxCount + condIf(showAutopilot, 1, 0)
+    return boxCount
+end
 
-        if verticalAlignment == "T" then
-            ly = SCREEN_HEIGHT - menuBarHeight - verticalMargin
+local function calc_positions()
+    local boxPositions = {}
+    local boxCount = active_box_count()
+    if rowCount == 1 then
+        if distribution == "H" then
+            for i = 0, (boxCount - 1) do
+                if horizontalAlignment == "L" then
+                    lx = horizontalMargin + (i * (boxWidth - borderWidth))
+                else
+                    lx = SCREEN_WIDTH - horizontalMargin - ((i + 1) * (boxWidth - borderWidth))
+                end
+
+                if verticalAlignment == "T" then
+                    ly = SCREEN_HEIGHT - menuBarHeight - verticalMargin
+                else
+                    ly = verticalMargin + boxHeight
+                end
+                table.insert(boxPositions, {lx, ly})
+            end
         else
-            ly = verticalMargin + boxHeight
+            for i = 0, (boxCount - 1) do
+                if horizontalAlignment == "L" then
+                    lx = horizontalMargin
+                else
+                    lx = SCREEN_WIDTH - horizontalMargin - boxWidth
+                end
+
+                if verticalAlignment == "T" then
+                    ly = SCREEN_HEIGHT - menuBarHeight - verticalMargin - (i * (boxHeight - borderWidth))
+                else
+                    ly = verticalMargin + ((boxCount - (i + 1)) * (boxHeight - borderWidth))
+                end
+                table.insert(boxPositions, {lx, ly})
+            end
         end
-        return lx, ly
+    else
+        -- for future use...
     end
+    return boxPositions
+end
+
+function show_flight_data()
+    local boxCount = 1
+    local curPos = { }
+    local positions = calc_positions()
 
     if showAircraft or showEngine then
         calc_fuel_data()
@@ -253,66 +298,40 @@ function show_flight_data()
         calc_weather_data()
     end
 
+    if showAircraft then
+        curPos = positions[boxCount]
+        draw_aircraft(curPos[1], curPos[2])
+        boxCount = boxCount + 1
+    end
+    if showEngine then
+        curPos = positions[boxCount]
+        draw_engine(curPos[1], curPos[2])
+        boxCount = boxCount + 1
+    end
+    if showWeather then
+        curPos = positions[boxCount]
+        draw_weather(curPos[1], curPos[2])
+        boxCount = boxCount + 1
+    end
+    if showLocation then
+        curPos = positions[boxCount]
+        draw_location(curPos[1], curPos[2])
+        boxCount = boxCount + 1
+    end
+    if showRadio then
+        curPos = positions[boxCount]
+        draw_radio(curPos[1], curPos[2])
+        boxCount = boxCount + 1
+    end
+    if showAutopilot then
+        -- draw_autopilot()
+    end
+
+    local yPosCloseButton = positions[1][2]
     if horizontalAlignment == "L" then
-        if showAircraft then
-            x, y = calcXY()
-            draw_aircraft(x, y)
-            colMultiplicator = colMultiplicator + 1
-        end
-        if showEngine then
-            x, y = calcXY()
-            draw_engine(x, y)
-            colMultiplicator = colMultiplicator + 1
-        end
-        if showWeather then
-            x, y = calcXY()
-            draw_weather(x, y)
-            colMultiplicator = colMultiplicator + 1
-        end
-        if showLocation then
-            x, y = calcXY()
-            draw_location(x, y)
-            colMultiplicator = colMultiplicator + 1
-        end
-        if showRadio then
-            x, y = calcXY()
-            draw_radio(x, y)
-            colMultiplicator = colMultiplicator + 1
-        end
-        if showAutopilot then
-            -- draw_autopilot()
-        end
-        draw_close_button(horizontalMargin, y)
+        draw_close_button(horizontalMargin, yPosCloseButton)
     else
-        if showAutopilot then
-            -- draw_autopilot()
-        end
-        if showRadio then
-            x, y = calcXY()
-            draw_radio(x, y)
-            colMultiplicator = colMultiplicator + 1
-        end
-        if showLocation then
-            x, y = calcXY()
-            draw_location(x, y)
-            colMultiplicator = colMultiplicator + 1
-        end
-        if showWeather then
-            x, y = calcXY()
-            draw_weather(x, y)
-            colMultiplicator = colMultiplicator + 1
-        end
-        if showEngine then
-            x, y = calcXY()
-            draw_engine(x, y)
-            colMultiplicator = colMultiplicator + 1
-        end
-        if showAircraft then
-            x, y = calcXY()
-            draw_aircraft(x, y)
-            colMultiplicator = colMultiplicator + 1
-        end
-        draw_close_button(SCREEN_WIDTH - horizontalMargin - 10, y)
+        draw_close_button(SCREEN_WIDTH - horizontalMargin - 10, yPosCloseButton)
     end
 end
 
@@ -990,6 +1009,11 @@ function xfdv_set_vertical_alignment(value)
     set_param("verticalAlignment", value)
 end
 
+function xfdv_set_distribution(value)
+    distribution = value
+    set_param("distribution", value)
+end
+
 function xfdv_set_aircraft_visibility(value)
     showAircraft = value
     set_param("showAircraft", value)
@@ -1027,7 +1051,7 @@ end
 
 function draw_config_panel()
     jjjLib1.clearPanel(pluginId, panelId)
-    jjjLib1.setPanelPos(pluginId, panelId, 10)
+    jjjLib1.setPanelPos(pluginId, panelId, SCREEN_WIDTH / 2 - 160)
     jjjLib1.setPanelName(pluginId, panelId, "CONFIGURATION")
     jjjLib1.addPanelTextLine(pluginId, panelId, "Panel position:")
     jjjLib1.addPanelBR(pluginId, panelId, 0.5)
@@ -1040,6 +1064,16 @@ function draw_config_panel()
     jjjLib1.addPanelButton(pluginId, panelId, "", "s", false, false, "")
     jjjLib1.addPanelButton(pluginId, panelId, "TOP", "s", verticalAlignment == "T", true, 'xfdv_set_vertical_alignment("T")')
     jjjLib1.addPanelButton(pluginId, panelId, "BOTTOM", "s", verticalAlignment == "B", true, 'xfdv_set_vertical_alignment("B")')
+
+    jjjLib1.addPanelBR(pluginId, panelId, 2)
+    jjjLib1.addPanelHR(pluginId, panelId)
+
+    jjjLib1.addPanelTextLine(pluginId, panelId, "Panel distribution:")
+    jjjLib1.addPanelBR(pluginId, panelId, 0.5)
+    jjjLib1.addPanelLabel(pluginId, panelId, "Distribution")
+    jjjLib1.addPanelButton(pluginId, panelId, "", "s", false, false, "")
+    jjjLib1.addPanelButton(pluginId, panelId, "HORIZONTAL", "s", distribution == "H", true, 'xfdv_set_distribution("H")')
+    jjjLib1.addPanelButton(pluginId, panelId, "VERTICAL", "s", distribution == "V", true, 'xfdv_set_distribution("V")')
 
     jjjLib1.addPanelBR(pluginId, panelId, 2)
     jjjLib1.addPanelHR(pluginId, panelId)
