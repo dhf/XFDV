@@ -18,7 +18,7 @@ if jjjLib1.version == nil or jjjLib1.version() < 1.7 then
 end
 
 local pluginId = jjjLib1.getPlId(pluginName)
-local panelId = jjjLib1.createPanel(pluginId, "", 320, 'draw_config_panel()', "grey")
+local panelId = jjjLib1.createPanel(pluginId, "", 370, 'draw_config_panel()', "grey")
 
 if XPLANE_VERSION < 12000 then
     jjjLib1.warning(pluginId, pluginName .. ': This plugin is for X-Plane 12 only!')
@@ -395,7 +395,8 @@ function draw_location(boxLeft, boxTop)
     localHours = string.format("%02d", localHours)
     localMinutes = string.format("%02d", localMinutes)
     --
-    ambiTempF = (ambiTemp * 9 / 5) + 32
+    ambiTempDisp = condIf(tempUnit == "C", ambiTemp,(ambiTemp * 9 / 5) + 32)
+    isaTempDisp = condIf(tempUnit == "C", isaTemp,(isaTemp * 9 / 5) + 32)
 
     --Conditionals
     if acftLat > 0 then
@@ -408,11 +409,6 @@ function draw_location(boxLeft, boxTop)
         ewLong = "W"
     else
         ewLong = "E"
-    end
-
-    if airSpeed <= 0 or round(gndSpeed) == 0 then
-        airSpeed = 0
-        altFtAGL = 0
     end
 
     --Time and Location
@@ -439,10 +435,10 @@ function draw_location(boxLeft, boxTop)
             string.format('%.2f', pressureS) .. " SL", 0, 1, 0, batteryOn)
     draw_fill_rect_text_center(left + 49, top - 58, 72, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
-            string.format('%04.1f°C', ambiTemp), 0, 1, 0, batteryOn)
+            string.format('%04.1f°%s', ambiTempDisp, tempUnit), 0, 1, 0, batteryOn)
     draw_fill_rect_text_center(left + 120, top - 58, 72, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
-            string.format('%04.1f°C', isaTemp), 0, 1, 0, batteryOn)
+            string.format('%04.1f°%s', isaTempDisp, tempUnit), 0, 1, 0, batteryOn)
 
     -- inline draw simulator info
     draw_simulator_inline(left, top - 75)
@@ -456,6 +452,11 @@ function draw_av_measurements_inline(left, top)
     draw_string(left + 103, top - 38, "Alt.", .9, .9, .9)
 
     --Airspeed
+    if airSpeed <= 0 or round(gndSpeed) == 0 then
+        airSpeed = 0
+        altFtAGL = 0
+    end
+
     if airSpeed >= overVne then
         draw_fill_rect_text_center(left + 49, top - 13, 47, 14, .6, .6, .6, .5,
                 1, 1, 0, 0, .45,
@@ -637,50 +638,50 @@ function draw_weather(boxLeft, boxTop)
 
     --wind dir box
     draw_string(left, top - 23, "Wind", .9, .9, .9)
-    draw_string(left + 69, top - 23, "at", .9, .9, .9)
-    draw_fill_rect_text_center(left + 32, top - 13, 31, 14, .6, .6, .6, .5,
+    draw_string(left + 80, top - 23, "at", .9, .9, .9)
+    draw_fill_rect_text_center(left + 37, top - 13, 35, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%03.0f', math.ceil(windDIR)), 0, 1, 0, batteryOn)
-    draw_fill_rect_text_center(left + 83, top - 13, 46, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_center(left + 97, top - 13, 49, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%02.0f', math.ceil(windSP)) .. " Kts", 0, 1, 0, batteryOn)
-    draw_fill_rect_text_center(left + 128, top - 13, 46, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_center(left + 145, top - 13, 49, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%02.0f', math.ceil(windMPH)) .. " Mph", 0, 1, 0, batteryOn)
 
     --Turbulence/Precip/Visibility
     draw_string(left, top - 39, "Turb.", .9, .9, .9)
-    draw_string(left + 63, top - 39, "Precip.", .9, .9, .9)
-    draw_string(left + 124, top - 39, "Vis.", .9, .9, .9)
+    draw_string(left + 72, top - 39, "Precip.", .9, .9, .9)
+    draw_string(left + 139, top - 39, "Vis.", .9, .9, .9)
 
-    draw_fill_rect_text_center(left + 32, top - 29, 25, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_center(left + 37, top - 29, 26, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%.1f', turbulence), 0, 1, 0, batteryOn)
-    draw_fill_rect_text_center(left + 101, top - 29, 17, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_center(left + 111, top - 29, 20, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%.0f', precip), 0, 1, 0, batteryOn)
-    draw_fill_rect_text_center(left + 145, top - 29, 29, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_center(left + 164, top - 29, 30, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%.0f', visMiles), 0, 1, 0, batteryOn)
 
-    draw_string(left, top - 53, "Clouds at Alt.", .9, .9, .9)
-    draw_string(left + 90, top - 53, "Type", .9, .9, .9)
-    draw_fill_rect_text_center(left, top - 57, 87, 14, .6, .6, .6, .5,
+    draw_string(left, top - 58, "Clouds at Alt.", .9, .9, .9)
+    draw_string(left + 99, top - 58, "Type", .9, .9, .9)
+    draw_fill_rect_text_center(left, top - 64, 97, 14, .6, .6, .6, .5,
             1, .1, .1, .3, .45,
             string.format('%05.0f', cloudAlt2 * 3.28), .9, .9, .9, batteryOn)
-    draw_fill_rect_text_center(left, top - 70, 87, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_center(left, top - 77, 97, 14, .6, .6, .6, .5,
             1, .1, .1, .6, .35,
             string.format('%05.0f', cloudAlt1 * 3.28), .9, .9, .9, batteryOn)
-    draw_fill_rect_text_center(left, top - 83, 87, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_center(left, top - 90, 97, 14, .6, .6, .6, .5,
             1, .1, .1, .9, .25,
             string.format('%05.0f', cloudAlt0 * 3.28), .9, .9, .9, batteryOn)
-    draw_fill_rect_text_left(left + 86, top - 57, 88, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_left(left + 96, top - 64, 97, 14, .6, .6, .6, .5,
             1, .0, .0, .0, .45,
             clType2, 0, 1, 0, batteryOn)
-    draw_fill_rect_text_left(left + 86, top - 70, 88, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_left(left + 96, top - 77, 97, 14, .6, .6, .6, .5,
             1, .1, .1, .1, .35,
             clType1, 0, 1, 0, batteryOn)
-    draw_fill_rect_text_left(left + 86, top - 83, 88, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_left(left + 96, top - 90, 97, 14, .6, .6, .6, .5,
             1, .2, .2, .2, .25,
             clType0, 0, 1, 0, batteryOn)
 end
@@ -1051,7 +1052,7 @@ end
 
 function draw_config_panel()
     jjjLib1.clearPanel(pluginId, panelId)
-    jjjLib1.setPanelPos(pluginId, panelId, SCREEN_WIDTH / 2 - 160)
+    jjjLib1.setPanelPos(pluginId, panelId, SCREEN_WIDTH / 2 - 185)
     jjjLib1.setPanelName(pluginId, panelId, "CONFIGURATION")
     jjjLib1.addPanelTextLine(pluginId, panelId, "Panel position:")
     jjjLib1.addPanelBR(pluginId, panelId, 0.5)
@@ -1072,8 +1073,8 @@ function draw_config_panel()
     jjjLib1.addPanelBR(pluginId, panelId, 0.5)
     jjjLib1.addPanelLabel(pluginId, panelId, "Distribution")
     jjjLib1.addPanelButton(pluginId, panelId, "", "s", false, false, "")
-    jjjLib1.addPanelButton(pluginId, panelId, "HORIZONTAL", "s", distribution == "H", true, 'xfdv_set_distribution("H")')
-    jjjLib1.addPanelButton(pluginId, panelId, "VERTICAL", "s", distribution == "V", true, 'xfdv_set_distribution("V")')
+    jjjLib1.addPanelButton(pluginId, panelId, "HORIZONTAL", "m", distribution == "H", true, 'xfdv_set_distribution("H")')
+    jjjLib1.addPanelButton(pluginId, panelId, "VERTICAL", "m", distribution == "V", true, 'xfdv_set_distribution("V")')
 
     jjjLib1.addPanelBR(pluginId, panelId, 2)
     jjjLib1.addPanelHR(pluginId, panelId)
