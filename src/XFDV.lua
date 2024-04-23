@@ -87,7 +87,7 @@ function getDataRefs()
     dataref("fuelPump", "sim/cockpit/engine/fuel_pump_on", 0, 0)
     dataref("magBearing", "sim/cockpit/misc/compass_indicated")
     dataref("cabinAlt", "sim/cockpit/pressure/cabin_altitude_actual_m_msl")
-    dataref("pressureP", "sim/cockpit/misc/barometer_setting")
+    dataref("pressurePInhg", "sim/cockpit/misc/barometer_setting")
     dataref("vacuumRatio", "sim/cockpit/misc/vacuum")
     dataref("pitoHeat", "sim/cockpit/switches/pitot_heat_on")
 
@@ -118,12 +118,15 @@ function getDataRefs()
     dataref("fuelAvailKgSum", "sim/flightmodel/weight/m_fuel_total")
 
     --Weather
-    dataref("pressureSPas", "sim/weather/region/sealevel_pressure_pas")
-    dataref("windSP", "sim/weather/aircraft/wind_speed_kts", "readonly", 0)
-    dataref("windDIR", "sim/weather/aircraft/wind_direction_degt", "readonly", 0)
+    dataref("pressureSInhg", "sim/weather/barometer_sealevel_inhg")
+    dataref("windSP", "sim/cockpit2/gauges/indicators/wind_speed_kts", "readonly", 0)
+    dataref("windDIR", "sim/cockpit2/gauges/indicators/wind_heading_deg_mag", "readonly", 0)
     dataref("ambiTemp", "sim/weather/aircraft/temperature_ambient_deg_c")
     dataref("isaTemp", "sim/weather/region/sealevel_temperature_c")
     dataref("precip", "sim/weather/region/rain_percent")
+    dataref("magPsi", "sim/flightmodel/position/mag_psi", "readonly")
+    dataref("hudBrght", "sim/cockpit/electrical/HUD_brightness", "readonly")
+
 
     dataref("cloudType0", "sim/weather/aircraft/cloud_type", "readonly", 0)
     dataref("cloudType1", "sim/weather/aircraft/cloud_type", "readonly", 1)
@@ -362,16 +365,8 @@ end
 
 function calc_weather_data()
     --atm pressure
-    ckPressure = 0
-    pressureS = pressureSPas / 3386.3886666667
-    pressureCk = pressureS - pressureP
-
-    if pressureCk < 0 then
-        pressureCk = pressureCk * -1
-    end
-    if pressureCk > .009 then
-        ckPressure = 1
-    end
+    pressureS = pressureSInhg * 33.863886666667
+    pressureP = pressurePInhg * 33.863886666667
 end
 
 function draw_close_button(left, top)
@@ -429,10 +424,10 @@ function draw_location(boxLeft, boxTop)
             string.format('%.3f', acftLat) .. nsLat .. " , " .. string.format('%.3f', acftLong) .. ewLong, 0, 1, 0, batteryOn)
     draw_fill_rect_text_center(left + 49, top - 43, 72, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
-            string.format('%.2f', pressureP) .. " Set", 0, 1, 0, batteryOn)
+            string.format('%04.0f', pressureP) .. " Set", 0, 1, 0, batteryOn)
     draw_fill_rect_text_center(left + 120, top - 43, 72, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
-            string.format('%.2f', pressureS) .. " SL", 0, 1, 0, batteryOn)
+            string.format('%04.0f', pressureS) .. " SL", 0, 1, 0, batteryOn)
     draw_fill_rect_text_center(left + 49, top - 58, 72, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%04.1f°%s', ambiTempDisp, tempUnit), 0, 1, 0, batteryOn)
@@ -607,6 +602,29 @@ function draw_aircraft(boxLeft, boxTop)
     end
 end
 
+function draw_wind_rose(boxLeft, boxTop)
+  local i = 0
+  left = boxLeft + 33
+  top = boxTop - 42
+
+  XPLMSetGraphicsState(0,0,0,1,1,0,0)
+  
+  graphics.set_color(0.3, 1.0, 0.0, hudBrght)
+  graphics.draw_circle(left, top, 15, 2)
+  graphics.draw_circle(left, top, 20, 2)
+  
+  graphics.set_color(0.3, 1.0, 0.0, hudBrght+.2)
+  graphics.draw_angle_arrow(left, top, windDIR - magPsi, 15, 0, 2)
+  graphics.draw_angle_arrow(left, top, windDIR - magPsi - 180, 15, 10, 2)
+  
+  for i = 0 , 7, 1 do
+    graphics.draw_tick_mark(left, top, i * 45, 20, 5, 1)
+  end
+  
+  graphics.set_color(1, 0, 0, 0.8)
+  graphics.draw_outer_tracer(left, top, windSP * 9, 13, 8)
+end
+
 function draw_weather(boxLeft, boxTop)
     draw_fill_rect(boxLeft, boxTop, boxWidth, boxHeight, .9, .9, .9, .325,
             1, .1, .1, .1, .425)
@@ -629,7 +647,7 @@ function draw_weather(boxLeft, boxTop)
 
     --Miscellaneous Calculations
     --weather
-    windMPH = 1.15 * math.ceil(windSP)
+    -- windMPH = 1.15 * math.ceil(windSP)
     --visibility
     visMiles = visibility * 0.000621371
 
@@ -637,53 +655,55 @@ function draw_weather(boxLeft, boxTop)
     draw_string(left, top - 10, "Weather Data", .9, .9, .2)
 
     --wind dir box
-    draw_string(left, top - 23, "Wind", .9, .9, .9)
-    draw_string(left + 80, top - 23, "at", .9, .9, .9)
-    draw_fill_rect_text_center(left + 37, top - 13, 35, 14, .6, .6, .6, .5,
+    draw_string(left + 54, top - 23, "Wind", .9, .9, .9)
+    draw_string(left + 130, top - 23, "at", .9, .9, .9)
+    draw_fill_rect_text_center(left + 91, top - 13, 35, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%03.0f', math.ceil(windDIR)), 0, 1, 0, batteryOn)
-    draw_fill_rect_text_center(left + 97, top - 13, 49, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_center(left + 150, top - 13, 44, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%02.0f', math.ceil(windSP)) .. " Kts", 0, 1, 0, batteryOn)
-    draw_fill_rect_text_center(left + 145, top - 13, 49, 14, .6, .6, .6, .5,
-            1, 0, 0, 0, .425,
-            string.format('%02.0f', math.ceil(windMPH)) .. " Mph", 0, 1, 0, batteryOn)
 
     --Turbulence/Precip/Visibility
-    draw_string(left, top - 39, "Turb.", .9, .9, .9)
-    draw_string(left + 72, top - 39, "Precip.", .9, .9, .9)
-    draw_string(left + 139, top - 39, "Vis.", .9, .9, .9)
+    draw_string(left + 54, top - 39, "Turb.", .9, .9, .9)
+    draw_string(left + 54, top - 55, "Precip.", .9, .9, .9)
+    draw_string(left + 130, top - 39, "Vis.", .9, .9, .9)
 
-    draw_fill_rect_text_center(left + 37, top - 29, 26, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_center(left + 91, top - 29, 35, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%.1f', turbulence), 0, 1, 0, batteryOn)
-    draw_fill_rect_text_center(left + 111, top - 29, 20, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_center(left + 91, top - 45, 35, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%.0f', precip), 0, 1, 0, batteryOn)
-    draw_fill_rect_text_center(left + 164, top - 29, 30, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_center(left + 150, top - 29, 44, 14, .6, .6, .6, .5,
             1, 0, 0, 0, .425,
             string.format('%.0f', visMiles), 0, 1, 0, batteryOn)
 
-    draw_string(left, top - 58, "Clouds at Alt.", .9, .9, .9)
-    draw_string(left + 99, top - 58, "Type", .9, .9, .9)
-    draw_fill_rect_text_center(left, top - 64, 97, 14, .6, .6, .6, .5,
+    local boxOffset = 75
+    draw_string(left, top - boxOffset, "Clouds at Alt.", .9, .9, .9)
+    draw_string(left + 99, top - boxOffset, "Type", .9, .9, .9)
+    draw_fill_rect_text_center(left, top - boxOffset - 6, 97, 14, .6, .6, .6, .5,
             1, .1, .1, .3, .45,
             string.format('%05.0f', cloudAlt2 * 3.28), .9, .9, .9, batteryOn)
-    draw_fill_rect_text_center(left, top - 77, 97, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_center(left, top - boxOffset - 19, 97, 14, .6, .6, .6, .5,
             1, .1, .1, .6, .35,
             string.format('%05.0f', cloudAlt1 * 3.28), .9, .9, .9, batteryOn)
-    draw_fill_rect_text_center(left, top - 90, 97, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_center(left, top - boxOffset - 32, 97, 14, .6, .6, .6, .5,
             1, .1, .1, .9, .25,
             string.format('%05.0f', cloudAlt0 * 3.28), .9, .9, .9, batteryOn)
-    draw_fill_rect_text_left(left + 96, top - 64, 97, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_left(left + 96, top - boxOffset - 6, 97, 14, .6, .6, .6, .5,
             1, .0, .0, .0, .45,
             clType2, 0, 1, 0, batteryOn)
-    draw_fill_rect_text_left(left + 96, top - 77, 97, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_left(left + 96, top - boxOffset - 19, 97, 14, .6, .6, .6, .5,
             1, .1, .1, .1, .35,
             clType1, 0, 1, 0, batteryOn)
-    draw_fill_rect_text_left(left + 96, top - 90, 97, 14, .6, .6, .6, .5,
+    draw_fill_rect_text_left(left + 96, top - boxOffset - 32, 97, 14, .6, .6, .6, .5,
             1, .2, .2, .2, .25,
             clType0, 0, 1, 0, batteryOn)
+
+    if batteryOn then
+        draw_wind_rose(boxLeft, boxTop)
+    end
 end
 
 function draw_simulator_inline(left, top)
@@ -1162,6 +1182,14 @@ function mainProg()
     end
 end
 
+function toggle_xfdv()
+    if XFDVisActive then
+        XFDVisActive = false
+    else
+        XFDVisActive = true
+    end
+end
+
 function mouse_click()
     -- close button clicked
     xClick = MOUSE_X
@@ -1208,4 +1236,4 @@ draw_config_panel()
 do_every_draw("mainProg()")
 do_on_mouse_click("mouse_click()")
 
-add_macro("Show XFDV Window", "XFDVisActive = true")
+add_macro("Show/Hide XFDV Window", "toggle_xfdv()")
